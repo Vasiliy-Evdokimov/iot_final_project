@@ -195,7 +195,7 @@
 		#endif /* HAL_SWPMI_MODULE_ENABLED */
 
 		#ifdef HAL_TIM_MODULE_ENABLED
-			#include "tim.h"
+			#include "stm32f4xx_hal_tim.h"
 		#endif /* HAL_TIM_MODULE_ENABLED */
 
 		#ifdef HAL_TSC_MODULE_ENABLED

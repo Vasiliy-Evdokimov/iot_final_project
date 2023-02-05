@@ -46,6 +46,8 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c2;
 
+TIM_HandleTypeDef htim3;
+
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
@@ -59,6 +61,7 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -75,9 +78,10 @@ uint8_t rx[BUFFER_SIZE] = {0};
 uint8_t fl_btn = 0;
 uint8_t fl_uart = 0;
 
-uint8_t currentMode = MODE_PERIODIC;
-uint8_t currentPeriod = 5;
-uint8_t currentPercents = 0;
+uint8_t mode = MODE_PERIODIC;
+uint8_t periodValue = 5;
+uint8_t periodCount = 0;
+uint8_t percents = 0;
 
 void getSensorsData() {
 
@@ -120,6 +124,12 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	if (huart == &huart1) {
 		__NOP();
 	}
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+
+	periodCount++;
+
 }
 
 void HandleButton() {
@@ -217,7 +227,10 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C2_Init();
   MX_USART1_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Start_IT(&htim3);
 
   FctERR status = APDS9930_Init(0, &hi2c2, APDS9930_ADDR);
   if (status != ERROR_OK) {
@@ -237,6 +250,7 @@ int main(void)
 	  if (fl_btn) {
 
 		  HandleButton();
+		  //
 		  fl_btn = 0;
 
 	  }
@@ -244,7 +258,17 @@ int main(void)
 	  if (fl_uart) {
 
 		  HandleUART();
+		  //
 		  fl_uart = 0;
+
+	  }
+
+	  if ((mode == MODE_PERIODIC) && (periodCount >= periodValue)) {
+
+		  fillTxSensorData();
+		  DoUartTransmit();
+		  //
+		  periodCount = 0;
 
 	  }
 
@@ -332,6 +356,51 @@ static void MX_I2C2_Init(void)
   /* USER CODE BEGIN I2C2_Init 2 */
 
   /* USER CODE END I2C2_Init 2 */
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 8400 - 1;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 10000 - 1;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
 
 }
 
