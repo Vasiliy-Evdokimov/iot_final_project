@@ -4,13 +4,7 @@
 #include "utils.h"
 
 sensor sensors[SENSORS_COUNT];
-/*
-const char * sensor_names[] = {
-  "TEMPERATURE",
-  "HUMIDITY",
-  "AMBIENT"
-};
-*/
+
 uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
     uint8_t res = 0;
     for (int i = 0; i < aDataLen; i++)

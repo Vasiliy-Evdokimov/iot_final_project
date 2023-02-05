@@ -3,9 +3,10 @@
 
 #define BUFFER_SIZE		16
 
-#define SENSORS_COUNT	3
+#define SENSORS_COUNT 3
+#define DEVICES_COUNT 2 
 
-#define MQTT_ROOT "Evdokimov_VI/bte_final/"
+#define MQTT_ROOT "Evdokimov_VI/bte_final"
 
 #define MODE_PERIODIC			0x11
 #define MODE_IFCHANGED			0x12
