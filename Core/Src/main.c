@@ -24,8 +24,6 @@
 
 #include "APDS9930.h"
 #include "DHT.h"
-#include <stdio.h>
-#include <string.h>
 
 /* USER CODE END Includes */
 
@@ -47,11 +45,10 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c2;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
-uint8_t fl = 0;
 
 /* USER CODE END PV */
 
@@ -60,6 +57,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -67,11 +65,44 @@ static void MX_I2C2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+uint8_t tx[4] = {0};
+uint8_t rx[4] = {0};
+uint8_t fl_btn = 0;
+uint8_t fl_uart = 0;
+
+void DoUartReceive() {
+	HAL_UART_Receive_IT (&huart1, &rx[0], 4);
+}
+
+void DoUartTransmit() {
+	HAL_UART_Transmit_IT (&huart1, &tx[0], 4);
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	__NOP();
-	//
-	fl = 1;
+
+	fl_btn = 1;
+
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+
+	if (huart == &huart1) {
+
+		fl_uart = 1;
+
+	}
+
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+
+	if (huart == &huart1) {
+
+		__NOP();
+
+	}
+
 }
 
 /* USER CODE END 0 */
@@ -106,6 +137,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_I2C2_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   FctERR status = APDS9930_Init(0, &hi2c2, 0x39);
@@ -113,7 +145,9 @@ int main(void)
 	  __NOP();
   }
 
-  static DHT_sensor livingRoom = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
+  static DHT_sensor room = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
+
+  DoUartReceive();
 
   /* USER CODE END 2 */
 
@@ -121,7 +155,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if (fl) {
+	  if (fl_btn) {
 
 		FctERR status = APDS9930_handler(&APDS9930[0]);
 		if (status != ERROR_OK) {
@@ -130,9 +164,24 @@ int main(void)
 
 		uint32_t lux = APDS9930[0].Lux;
 
-		DHT_data d = DHT_getData(&livingRoom);
+		DHT_data d = DHT_getData(&room);
 
-		fl = 0;
+		tx[0] = 1;
+		tx[1] = 2;
+		tx[2] = 3;
+		tx[3] = 4;
+
+		DoUartTransmit();
+
+		fl_btn = 0;
+
+	  }
+
+	  if (fl_uart) {
+
+		  DoUartReceive();
+
+		  fl_uart = 0;
 
 	  }
 
@@ -224,6 +273,39 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -239,7 +321,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
