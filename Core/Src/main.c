@@ -65,6 +65,8 @@ static void MX_USART1_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+DHT_sensor room = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
+
 uint8_t tx[4] = {0};
 uint8_t rx[4] = {0};
 uint8_t fl_btn = 0;
@@ -105,6 +107,36 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 
 }
 
+void HandleButton() {
+
+	FctERR status = APDS9930_handler(&APDS9930[0]);
+	if (status != ERROR_OK) {
+		__NOP();
+	}
+
+	uint32_t lux = APDS9930[0].Lux;
+
+	DHT_data d = DHT_getData(&room);
+
+	tx[0] = 1;
+	tx[1] = 2;
+	tx[2] = 3;
+	tx[3] = 4;
+
+	DoUartTransmit();
+
+}
+
+void HandleUART() {
+
+	DoUartReceive();
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -140,12 +172,10 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  FctERR status = APDS9930_Init(0, &hi2c2, 0x39);
+  FctERR status = APDS9930_Init(0, &hi2c2, APDS9930_ADDR);
   if (status != ERROR_OK) {
 	  __NOP();
   }
-
-  static DHT_sensor room = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 
   DoUartReceive();
 
@@ -157,30 +187,14 @@ int main(void)
   {
 	  if (fl_btn) {
 
-		FctERR status = APDS9930_handler(&APDS9930[0]);
-		if (status != ERROR_OK) {
-			__NOP();
-		}
-
-		uint32_t lux = APDS9930[0].Lux;
-
-		DHT_data d = DHT_getData(&room);
-
-		tx[0] = 1;
-		tx[1] = 2;
-		tx[2] = 3;
-		tx[3] = 4;
-
-		DoUartTransmit();
-
-		fl_btn = 0;
+		  HandleButton();
+		  fl_btn = 0;
 
 	  }
 
 	  if (fl_uart) {
 
-		  DoUartReceive();
-
+		  HandleUART();
 		  fl_uart = 0;
 
 	  }
