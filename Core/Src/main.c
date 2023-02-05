@@ -24,6 +24,7 @@
 
 #include "APDS9930.h"
 #include "DHT.h"
+#include "utils.h"
 
 /* USER CODE END Includes */
 
@@ -65,65 +66,92 @@ static void MX_USART1_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+extern sensor sensors[SENSORS_COUNT];
+
 DHT_sensor room = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 
-uint8_t tx[4] = {0};
-uint8_t rx[4] = {0};
+uint8_t tx[BUFFER_SIZE] = {0};
+uint8_t rx[BUFFER_SIZE] = {0};
 uint8_t fl_btn = 0;
 uint8_t fl_uart = 0;
 
-void DoUartReceive() {
-	HAL_UART_Receive_IT (&huart1, &rx[0], 4);
-}
+uint8_t currentMode = MODE_PERIODIC;
+uint8_t currentPeriod = 5;
+uint8_t currentPercents = 0;
 
-void DoUartTransmit() {
-	HAL_UART_Transmit_IT (&huart1, &tx[0], 4);
-}
+void getSensorsData() {
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-
-	fl_btn = 1;
-
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-
-	if (huart == &huart1) {
-
-		fl_uart = 1;
-
-	}
-
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-
-	if (huart == &huart1) {
-
-		__NOP();
-
-	}
-
-}
-
-void HandleButton() {
+	sensor* s = NULL;
 
 	FctERR status = APDS9930_handler(&APDS9930[0]);
 	if (status != ERROR_OK) {
 		__NOP();
 	}
-
-	uint32_t lux = APDS9930[0].Lux;
-
+	s = getSensorByType(DATA_AMBIENT);
+	if (s) s->data = APDS9930[0].Lux & 0xFF;
+	//
 	DHT_data d = DHT_getData(&room);
+	s = getSensorByType(DATA_TEMPERATURE);
+	if (s) s->data = (int)d.temp;
+	s = getSensorByType(DATA_HUMIDITY);
+	if (s) s->data = (int)d.hum;
 
-	tx[0] = 1;
-	tx[1] = 2;
-	tx[2] = 3;
-	tx[3] = 4;
+}
 
+void DoUartReceive() {
+	HAL_UART_Receive_IT (&huart1, &rx[0], BUFFER_SIZE);
+}
+
+void DoUartTransmit() {
+	HAL_UART_Transmit_IT (&huart1, &tx[0], BUFFER_SIZE);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	fl_btn = 1;
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart == &huart1) {
+		fl_uart = 1;
+	}
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart == &huart1) {
+		__NOP();
+	}
+}
+
+void HandleButton() {
+	fillTxSensorData();
 	DoUartTransmit();
+}
+
+void fillTxCRC() {
+	uint8_t idx = tx[1];
+	tx[idx] = getCRC(idx, &tx);
+}
+
+void fillTxSensorData() {
+
+	memset(tx, 0, BUFFER_SIZE);
+
+	tx[0] = MSG_SENSORS_DATA;
+
+	getSensorsData();
+
+	uint8_t i = 2;
+
+	checkSensorsAlert();
+
+	for (int j = 0; j < SENSORS_COUNT; j++) {
+		tx[i++] = sensors[j].type;
+		tx[i++] = sensors[j].data;
+	}
+
+	tx[1] = i;
+
+	fillTxCRC();
 
 }
 
@@ -131,9 +159,28 @@ void HandleUART() {
 
 	DoUartReceive();
 
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-	HAL_Delay(1000);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	uint8_t rx0 = rx[0];
+	uint8_t rx1 = rx[1];
+
+	uint8_t crc = getCRC(rx1, rx);
+
+	if (crc != rx[rx1]) {
+
+		/* Handle CRC error */
+		__NOP();
+		//
+		return;
+
+	}
+
+	memset(tx, 0, BUFFER_SIZE);
+
+	if (rx0 == CMD_GET_SENSORS_DATA) {
+
+		fillTxSensorData();
+		DoUartTransmit();
+
+	}
 
 }
 
@@ -176,6 +223,8 @@ int main(void)
   if (status != ERROR_OK) {
 	  __NOP();
   }
+
+  initSensors();
 
   DoUartReceive();
 

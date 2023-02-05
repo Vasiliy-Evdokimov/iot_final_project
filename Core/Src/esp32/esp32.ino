@@ -1,8 +1,11 @@
+#include "utils.c"
+#include "auth.h"
+
 #define RXD2 16
 #define TXD2 17
 
-char tx[4] = {0};
-char rx[4] = {0};
+uint8_t tx[BUFFER_SIZE] = {0};
+uint8_t rx[BUFFER_SIZE] = {0};
 
 void setup() {  
   Serial.begin(115200);
@@ -12,20 +15,30 @@ void setup() {
   Serial.println("Setup!");
 }
 
+void printRX() {
+  for (int i = 0; i < rx[1]; i++) 
+    Serial.println("RX_" + (String)i + "=" + (String)(rx[i]));
+}
+
+uint8_t rx0, rx1;
+
 void loop() {
   //Choose Serial1 or Serial2 as required
   while (Serial2.available()) {
-    Serial2.readBytes(rx, 4);
-    Serial.println(rx[0], DEC);
-    Serial.println(rx[1], DEC);
-    Serial.println(rx[2], DEC);
-    Serial.println(rx[3], DEC);
+    Serial2.readBytes(rx, BUFFER_SIZE);
+    rx0 = rx[0];
+    rx1 = rx[1];
+    //    
+    uint8_t crc = getCRC(rx1, rx);
     //
-    for (int i = 0; i < 4; i++)
-      tx[i] = rx[i] + 1;
+    if (crc != rx[rx1]) {
+      Serial.println("CRC failed!");
+      //rx0 = 0;
+    }
     //
-    Serial2.write(tx, 4);
-    Serial.println("Sent!");  
+    if (rx0 == MSG_SENSORS_DATA) {
+      printRX();
+    }    
   } 
   //
   Serial.println("Status!");
