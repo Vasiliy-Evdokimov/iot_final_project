@@ -69,9 +69,17 @@ static void MX_TIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+typedef struct {
+	uint8_t id;
+	uint8_t type;
+	GPIO_TypeDef* port;
+	uint16_t pin;
+	GPIO_PinState state;
+} device;
+
 extern sensor sensors[SENSORS_COUNT];
 
-DHT_sensor room = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
+DHT_sensor dht11 = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 
 uint8_t tx[BUFFER_SIZE] = {0};
 uint8_t rx[BUFFER_SIZE] = {0};
@@ -83,22 +91,41 @@ uint8_t periodValue = 5;
 uint8_t periodCount = 0;
 uint8_t percents = 0;
 
+device devices[DEVICES_COUNT];
+
+sensor* psensor;
+device* pdevice;
+
+void initDevices() {
+	devices[0].id = 0;
+	devices[0].type = DEVICE_LED;
+	devices[0].port = GPIOB;
+	devices[0].pin = GPIO_PIN_4;
+	devices[0].state = GPIO_PIN_RESET;
+	//
+	devices[1].id = 1;
+	devices[1].type = DEVICE_FAN;
+	devices[1].port = GPIOB;
+	devices[1].pin = GPIO_PIN_5;
+	devices[1].state = GPIO_PIN_RESET;
+}
+
 void getSensorsData() {
 
-	sensor* s = NULL;
+	psensor = NULL;
 
 	FctERR status = APDS9930_handler(&APDS9930[0]);
 	if (status != ERROR_OK) {
 		__NOP();
 	}
-	s = getSensorByType(DATA_AMBIENT);
-	if (s) s->data = APDS9930[0].Lux & 0xFF;
+	psensor = getSensorByType(DATA_AMBIENT);
+	if (psensor) psensor->data = APDS9930[0].Lux & 0xFF;
 	//
-	DHT_data d = DHT_getData(&room);
-	s = getSensorByType(DATA_TEMPERATURE);
-	if (s) s->data = (int)d.temp;
-	s = getSensorByType(DATA_HUMIDITY);
-	if (s) s->data = (int)d.hum;
+	DHT_data d = DHT_getData(&dht11);
+	psensor = getSensorByType(DATA_TEMPERATURE);
+	if (psensor) psensor->data = (int)d.temp;
+	psensor = getSensorByType(DATA_HUMIDITY);
+	if (psensor) psensor->data = (int)d.hum;
 
 }
 
@@ -129,6 +156,14 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	periodCount++;
+
+	for (int i = 0; i < DEVICES_COUNT; i++)
+		HAL_GPIO_TogglePin(devices[i].port, devices[i].pin);
+
+	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
 }
 
@@ -185,12 +220,29 @@ void HandleUART() {
 
 	memset(tx, 0, BUFFER_SIZE);
 
+	if (rx0 == CMD_SET_MODE) {
+		mode = rx1;
+	} else
+	//
+	if (rx0 == CMD_SET_PERIOD) {
+		periodValue = rx1;
+	} else
+	//
+	if (rx0 == CMD_SET_PERCENTS) {
+		percents = rx1;
+	} else
+	//
+	if (rx0 == CMD_SET_ALERT_LEVEL) {
+		psensor = getSensorByType(rx1);
+		psensor->alert_level = rx[2];
+	} else
+	//
 	if (rx0 == CMD_GET_SENSORS_DATA) {
-
 		fillTxSensorData();
 		DoUartTransmit();
-
 	}
+	//
+
 
 }
 
@@ -230,14 +282,15 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  initDevices();
+  initSensors();
+
   HAL_TIM_Base_Start_IT(&htim3);
 
   FctERR status = APDS9930_Init(0, &hi2c2, APDS9930_ADDR);
   if (status != ERROR_OK) {
 	  __NOP();
   }
-
-  initSensors();
 
   DoUartReceive();
 
@@ -488,6 +541,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -500,6 +556,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;

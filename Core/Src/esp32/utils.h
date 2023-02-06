@@ -35,6 +35,9 @@
 
 #define ERR_CRC_FAILED			0x71
 
+#define DEVICE_STATE_OFF		0x81
+#define DEVICE_STATE_ON			0x82
+
 typedef struct {
 	uint8_t id;
 	uint8_t type;
