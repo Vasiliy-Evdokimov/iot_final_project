@@ -12,11 +12,12 @@
 #define RXD2 16
 #define TXD2 17
 
+//WiFiServer wifi_server(80);
 WebServer server(80);
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-const char* sensors_settings[] {
+const char* sensors_settings[] = {
   "mode",
   "period"  
 };
@@ -225,9 +226,25 @@ void loop() {
     topicsSubscribe();
   }    
   //
-  client.loop();  
+  client.loop();
+  //  
+  /*
+  WiFiClient http_client = wifi_server.available();  
+  if (http_client) { 
+    header = "";
+    while (http_client.connected()) {
+      if (http_client.available()) {
+        char c = http_client.read();
+        Serial.write(c);
+        header += c;
+      }        
+    }
+    //
+    http_client.stop();  
+  }
+  */
   //  
   server.handleClient();
-  delay(1);
+  delay(1);  
   
 }
