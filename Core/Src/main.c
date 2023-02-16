@@ -167,6 +167,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 }
 
+void fillTxSensorData();
+
 void HandleButton() {
 	fillTxSensorData();
 	DoUartTransmit();

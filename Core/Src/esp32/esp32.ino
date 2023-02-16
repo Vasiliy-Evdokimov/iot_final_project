@@ -6,6 +6,7 @@
 
 #include "utils.c"
 #include "auth.h"
+#include "html_page.h"
 
 #define UART_BAUDRATE 9600
 #define RXD2 16
@@ -15,29 +16,29 @@ WebServer server(80);
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-const char * sensors_settings[] {
+const char* sensors_settings[] {
   "mode",
   "period"  
 };
 
-const char * sensor_params[] = {
+const char* sensor_params[] = {
   "value",
   "alert_flag",
   "check_alert",
   "alert_value"
 };
 
-const char * sensor_names[] = {
+const char* sensor_names[] = {
   "temperature",
   "humidity",
   "ambient"
 };
 
-const char * device_params[] = {
+const char* device_params[] = {
   "state"
 };
 
-const char * device_names[] = {
+const char* device_names[] = {
   "led",
   "fan"
 };
@@ -47,6 +48,26 @@ uint8_t rx[BUFFER_SIZE] = {0};
 
 char mqtt_topic[128];
 char mqtt_value[20];
+
+void handleRoot() {  
+  server.send(200, "text/html", MAIN_page);
+}
+
+void handleGetSensors() {
+  const char* json = 
+    "{\"type\": \"sensors\", "
+    "\"data\": ["
+      "{\"name\": \"temperature\", \"data\": {\"value\": 1, \"alert_flag\": 0}}, " 
+      "{\"name\": \"humidity\", \"data\": {\"value\": 2, \"alert_flag\": 0}}, "
+      "{\"name\": \"ambient\", \"data\": {\"value\": 3, \"alert_flag\": 0}}"
+    "]}";
+  server.send(200, "text/plane", json);
+}
+
+void handleSetMode() {
+  Serial.println("handleSetMode()");
+  server.send(200, "text/plane", 0);
+}
 
 void receivedCallback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message received: ");
@@ -117,6 +138,12 @@ void topicsSubscribe() {
   }          
 }
 
+void initWebServer() {  
+  server.on("/", handleRoot);
+  server.on("/getSensors", handleGetSensors);
+  server.on("/setMode", handleSetMode);
+}
+
 void setup() {  
   Serial.begin(115200);
   Serial2.begin(UART_BAUDRATE, SERIAL_8N1, RXD2, TXD2);
@@ -144,6 +171,10 @@ void setup() {
   //
   client.setCallback(receivedCallback);
   //
+  initWebServer();
+  server.begin();
+  Serial.println("HTTP server started!");
+  //
   delay(500);
   Serial.println("Setup!");      
 }
@@ -156,7 +187,10 @@ void printRX() {
 uint8_t rx0, rx1;
 sensor* s; 
 
+String header;
+
 void loop() {  
+  
   while (Serial2.available()) {
     Serial2.readBytes(rx, BUFFER_SIZE);
     rx0 = rx[0];
@@ -191,9 +225,9 @@ void loop() {
     topicsSubscribe();
   }    
   //
-  client.loop();
-  //
-  Serial.println("Status!");
-  delay(500);
+  client.loop();  
+  //  
+  server.handleClient();
+  delay(1);
   
 }
