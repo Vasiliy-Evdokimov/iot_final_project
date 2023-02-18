@@ -19,33 +19,26 @@
 #define DEVICE_LED 1
 #define DEVICE_FAN 2
 
-#define CMD_SET_MODE 1
-#define CMD_SET_PERIOD 2
-#define CMD_SET_PERCENTS 3
-#define CMD_SET_ALERT_LEVEL 4
-#define CMD_SET_ALERT_FLAG 5
+#define CMD_GET_SENSORS_DATA 1
+#define CMD_SET_MODE 2
+#define CMD_SET_ALERTS 3
+#define CMD_SET_DEVICES 4
 
 #define COMPARE_EQUAL 1
 #define COMPARE_LESS 2
 #define COMPARE_GREATER 3
 
-#define CMD_GET_SENSORS_DATA 1
-#define CMD_SET_DEVICE_STATUS 2
-#define CMD_GET_DEVICE_STATUS 3
-
 #define MSG_SENSORS_DATA 1
 
 #define ERR_CRC_FAILED 1
-
-#define DEVICE_STATE_OFF 1
-#define DEVICE_STATE_ON 2
 
 typedef struct {
 	uint8_t id;
 	uint8_t type;
 	uint8_t data;
-	uint8_t check_alert;
-	uint8_t alert_level;
+	uint8_t alert_check;
+	uint8_t alert_compare;
+  uint8_t alert_value;
 	uint8_t alert_flag;
 } sensor;
 
@@ -56,5 +49,7 @@ void initSensors();
 sensor* getSensorByType(uint8_t aSensorType);
 
 uint8_t checkSensorsAlert();
+
+void fillTxCRC(uint8_t *aTx);
 
 #endif

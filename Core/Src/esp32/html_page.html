@@ -32,6 +32,7 @@
     setInterval(function() { getStatus(); }, 2000);
 
     var sensors = ["temperature", "humidity", "ambient"];
+    var devices = ["led", "fan"];
 
     function handleStatus(status) {
       console.log("status.sensors=" + status.sensors);
@@ -74,7 +75,7 @@
           val + "=" + val_obj.value + "&";
       });
       q = q.substring(0, q.length - 1);
-      //alert(q);
+      alert(q);
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
@@ -108,10 +109,25 @@
           break;
         }       
       }
-      //alert(q);
+      alert(q);
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
+    }
+
+    function setDevices() {      
+      var q = "setDevices?";
+      devices.forEach(function(item, i, arr) {
+        let chk = item + "_switch";
+        let chk_obj = document.getElementById(chk);
+        //
+        q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
+      });
+      q = q.substring(0, q.length - 1);
+      alert(q);      
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", q, true);
+      xhttp.send();      
     }
     
     function btnClick() {      
@@ -180,8 +196,15 @@
         </div>
         <button onclick="setMode()">SET MODE</button>
       </div>
-      <br>
+      <br><br>
+      <div class="devices">
+        <div>DEVICES:</div>
+        <div><input type="checkbox" id="led_switch" onchange="setDevices()"> led</div>
+        <div><input type="checkbox" id="fan_switch" onchange="setDevices()"> fan</div>
+      </div>        
+      <!--
       <button class="test_btn" onclick="btnClick()">TEST</button>
+      -->
     </div>
   </div>
 </div>

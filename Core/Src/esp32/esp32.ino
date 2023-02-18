@@ -49,6 +49,12 @@ uint8_t rx[BUFFER_SIZE] = {0};
 char mqtt_topic[128];
 char mqtt_value[20];
 
+void DoUartTransmit() {
+  if (!tx[0]) return;
+  Serial2.flush();
+  Serial2.write(tx, BUFFER_SIZE);
+}
+
 void handleRoot() {  
   server.send(200, "text/html", MAIN_page);
 }
@@ -72,6 +78,28 @@ void handleSetMode() {
 
 void handleSetAlerts() {
   Serial.println("handleSetAlerts()");    
+  server.send(200, "text/plane", 0);
+}
+
+void handleSetDevices() {
+  Serial.println("handleSetDevices()");    
+  //
+  String s, a;
+  memset(tx, 0, BUFFER_SIZE);
+  tx[0] = CMD_SET_DEVICES;
+  uint8_t i = 2;
+  for (int j = 0; j < DEVICES_COUNT; j++) {
+    s = (String)device_names[j] + "_switch";
+    a = server.arg(s);    
+    tx[i++] = j + 1;
+    tx[i++] = a.toInt() & 0xFF;    
+    Serial.println(s + "=" + a);
+  }
+  tx[1] = i;
+  fillTxCRC(tx);
+  //
+  DoUartTransmit();
+  //
   server.send(200, "text/plane", 0);
 }
 
@@ -149,6 +177,7 @@ void initWebServer() {
   server.on("/getStatus", handleGetStatus);
   server.on("/setMode", handleSetMode);
   server.on("/setAlerts", handleSetAlerts);
+  server.on("/setDevices", handleSetDevices);
 }
 
 void setup() {  

@@ -79,10 +79,11 @@ typedef struct {
 
 extern sensor sensors[SENSORS_COUNT];
 
+uint8_t tx[BUFFER_SIZE];
+uint8_t rx[BUFFER_SIZE];
+
 DHT_sensor dht11 = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 
-uint8_t tx[BUFFER_SIZE] = {0};
-uint8_t rx[BUFFER_SIZE] = {0};
 uint8_t fl_btn = 0;
 uint8_t fl_uart = 0;
 
@@ -130,11 +131,11 @@ void getSensorsData() {
 }
 
 void DoUartReceive() {
-	HAL_UART_Receive_IT (&huart1, &rx[0], BUFFER_SIZE);
+	HAL_UART_Receive_IT (&huart1, rx, BUFFER_SIZE);
 }
 
 void DoUartTransmit() {
-	HAL_UART_Transmit_IT (&huart1, &tx[0], BUFFER_SIZE);
+	HAL_UART_Transmit_IT (&huart1, tx, BUFFER_SIZE);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -154,29 +155,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-
 	periodCount++;
-
-	for (int i = 0; i < DEVICES_COUNT; i++)
-		HAL_GPIO_TogglePin(devices[i].port, devices[i].pin);
-
-	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
-	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
-	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-
-}
-
-void fillTxSensorData();
-
-void HandleButton() {
-	fillTxSensorData();
-	DoUartTransmit();
-}
-
-void fillTxCRC() {
-	uint8_t idx = tx[1];
-	tx[idx] = getCRC(idx, &tx);
 }
 
 void fillTxSensorData() {
@@ -198,8 +177,13 @@ void fillTxSensorData() {
 
 	tx[1] = i;
 
-	fillTxCRC();
+	fillTxCRC(tx);
 
+}
+
+void HandleButton() {
+	fillTxSensorData();
+	DoUartTransmit();
 }
 
 void HandleUART() {
@@ -222,29 +206,27 @@ void HandleUART() {
 
 	memset(tx, 0, BUFFER_SIZE);
 
+	if (rx0 == CMD_GET_SENSORS_DATA) {
+		fillTxSensorData();
+		DoUartTransmit();
+	} else
+	//
 	if (rx0 == CMD_SET_MODE) {
 		mode = rx1;
 	} else
 	//
-	if (rx0 == CMD_SET_PERIOD) {
-		periodValue = rx1;
+	if (rx0 == CMD_SET_ALERTS) {
+		__NOP();
 	} else
 	//
-	if (rx0 == CMD_SET_PERCENTS) {
-		percents = rx1;
-	} else
-	//
-	if (rx0 == CMD_SET_ALERT_LEVEL) {
-		psensor = getSensorByType(rx1);
-		psensor->alert_level = rx[2];
-	} else
-	//
-	if (rx0 == CMD_GET_SENSORS_DATA) {
-		fillTxSensorData();
-		DoUartTransmit();
-	}
-	//
-
+    if (rx0 == CMD_SET_DEVICES) {
+    	for (int i = 0; i < rx[1] / 2; i++)
+    		for (int j = 0; j < DEVICES_COUNT; j++)
+    			if (devices[j].type == rx[2 + i * 2]) {
+    				HAL_GPIO_WritePin(devices[j].port, devices[j].pin, rx[2 + i * 2 + 1]);
+    				break;
+    			}
+    }
 
 }
 
