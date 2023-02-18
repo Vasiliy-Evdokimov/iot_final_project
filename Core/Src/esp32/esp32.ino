@@ -12,7 +12,6 @@
 #define RXD2 16
 #define TXD2 17
 
-//WiFiServer wifi_server(80);
 WebServer server(80);
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -54,10 +53,9 @@ void handleRoot() {
   server.send(200, "text/html", MAIN_page);
 }
 
-void handleGetSensors() {
+void handleGetStatus() {
   const char* json = 
-    "{\"type\": \"sensors\", "
-    "\"data\": ["
+    "{\"sensors\": ["
       "{\"name\": \"temperature\", \"data\": {\"value\": 1, \"alert_flag\": 0}}, " 
       "{\"name\": \"humidity\", \"data\": {\"value\": 2, \"alert_flag\": 0}}, "
       "{\"name\": \"ambient\", \"data\": {\"value\": 3, \"alert_flag\": 0}}"
@@ -67,6 +65,13 @@ void handleGetSensors() {
 
 void handleSetMode() {
   Serial.println("handleSetMode()");
+  String modeID = server.arg("mode");
+  Serial.println("modeID=" + modeID);
+  server.send(200, "text/plane", 0);
+}
+
+void handleSetAlerts() {
+  Serial.println("handleSetAlerts()");    
   server.send(200, "text/plane", 0);
 }
 
@@ -141,8 +146,9 @@ void topicsSubscribe() {
 
 void initWebServer() {  
   server.on("/", handleRoot);
-  server.on("/getSensors", handleGetSensors);
+  server.on("/getStatus", handleGetStatus);
   server.on("/setMode", handleSetMode);
+  server.on("/setAlerts", handleSetAlerts);
 }
 
 void setup() {  
@@ -188,8 +194,6 @@ void printRX() {
 uint8_t rx0, rx1;
 sensor* s; 
 
-String header;
-
 void loop() {  
   
   while (Serial2.available()) {
@@ -224,26 +228,10 @@ void loop() {
   if (!client.connected()) {
     mqttconnect();
     topicsSubscribe();
-  }    
+  }
   //
   client.loop();
-  //  
-  /*
-  WiFiClient http_client = wifi_server.available();  
-  if (http_client) { 
-    header = "";
-    while (http_client.connected()) {
-      if (http_client.available()) {
-        char c = http_client.read();
-        Serial.write(c);
-        header += c;
-      }        
-    }
-    //
-    http_client.stop();  
-  }
-  */
-  //  
+  //
   server.handleClient();
   delay(1);  
   

@@ -8,36 +8,37 @@
 
 #define MQTT_ROOT "Evdokimov_VI/bte_final"
 
-#define MODE_PERIODIC			0x11
-#define MODE_IFCHANGED			0x12
-#define MODE_BYCOMMAND			0x13
+#define MODE_PERIODIC 1
+#define MODE_IFCHANGED 2
+#define MODE_BYCOMMAND 3
 
-#define SENSOR_DHT				0x21
-#define SENSOR_APDS				0x22
+#define SENSOR_TEMPERATURE 1
+#define SENSOR_HUMIDITY 2
+#define SENSOR_AMBIENT 3
 
-#define DATA_TEMPERATURE		0x31
-#define DATA_HUMIDITY			0x32
-#define DATA_AMBIENT			0x33
+#define DEVICE_LED 1
+#define DEVICE_FAN 2
 
-#define DEVICE_LED				0x41
-#define DEVICE_FAN				0x42
+#define CMD_SET_MODE 1
+#define CMD_SET_PERIOD 2
+#define CMD_SET_PERCENTS 3
+#define CMD_SET_ALERT_LEVEL 4
+#define CMD_SET_ALERT_FLAG 5
 
-#define CMD_SET_MODE			0x51
-#define CMD_SET_PERIOD			0x52
-#define CMD_SET_PERCENTS		0x53
-#define CMD_SET_ALERT_LEVEL		0x54
-#define CMD_SET_ALERT_FLAG		0x55
+#define COMPARE_EQUAL 1
+#define COMPARE_LESS 2
+#define COMPARE_GREATER 3
 
-#define CMD_GET_SENSORS_DATA	0x55
-#define CMD_SET_DEVICE_STATUS	0x56
-#define CMD_GET_DEVICE_STATUS	0x57
+#define CMD_GET_SENSORS_DATA 1
+#define CMD_SET_DEVICE_STATUS 2
+#define CMD_GET_DEVICE_STATUS 3
 
-#define MSG_SENSORS_DATA		0x61
+#define MSG_SENSORS_DATA 1
 
-#define ERR_CRC_FAILED			0x71
+#define ERR_CRC_FAILED 1
 
-#define DEVICE_STATE_OFF		0x81
-#define DEVICE_STATE_ON			0x82
+#define DEVICE_STATE_OFF 1
+#define DEVICE_STATE_ON 2
 
 typedef struct {
 	uint8_t id;

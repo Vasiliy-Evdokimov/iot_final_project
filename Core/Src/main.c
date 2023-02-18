@@ -118,13 +118,13 @@ void getSensorsData() {
 	if (status != ERROR_OK) {
 		__NOP();
 	}
-	psensor = getSensorByType(DATA_AMBIENT);
+	psensor = getSensorByType(SENSOR_AMBIENT);
 	if (psensor) psensor->data = APDS9930[0].Lux & 0xFF;
 	//
 	DHT_data d = DHT_getData(&dht11);
-	psensor = getSensorByType(DATA_TEMPERATURE);
+	psensor = getSensorByType(SENSOR_TEMPERATURE);
 	if (psensor) psensor->data = (int)d.temp;
-	psensor = getSensorByType(DATA_HUMIDITY);
+	psensor = getSensorByType(SENSOR_HUMIDITY);
 	if (psensor) psensor->data = (int)d.hum;
 
 }

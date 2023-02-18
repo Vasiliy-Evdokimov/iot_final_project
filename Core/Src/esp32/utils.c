@@ -14,9 +14,9 @@ uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
 }
 
 void initSensors() {
-	sensors[0].type = DATA_TEMPERATURE;
-	sensors[1].type = DATA_HUMIDITY;
-	sensors[2].type = DATA_AMBIENT;
+	sensors[0].type = SENSOR_TEMPERATURE;
+	sensors[1].type = SENSOR_HUMIDITY;
+	sensors[2].type = SENSOR_AMBIENT;
 	//
 	for (int i = 0; i < SENSORS_COUNT; i++) {
 		sensors[i].id = i;
