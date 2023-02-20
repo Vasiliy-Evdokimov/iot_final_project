@@ -18,14 +18,16 @@ PubSubClient client(espClient);
 
 const char* sensors_settings[] = {
   "mode",
-  "period"  
+  "period",
+  "percents"
 };
 
 const char* sensor_params[] = {
   "value",
-  "alert_flag",
-  "check_alert",
-  "alert_value"
+  "alert_check",
+  "alert_compare",
+  "alert_value",
+  "alert_flag"
 };
 
 const char* sensor_names[] = {
@@ -60,6 +62,12 @@ void handleRoot() {
 }
 
 void handleGetStatus() {
+  String json2 = "{\"sensors\": [";  
+  for (int i = 0; i < SENSORS_COUNT; i++) {
+    //  
+  }
+  json2 += "]}";
+  //
   const char* json = 
     "{\"sensors\": ["
       "{\"name\": \"temperature\", \"data\": {\"value\": 1, \"alert_flag\": 0}}, " 
@@ -71,13 +79,46 @@ void handleGetStatus() {
 
 void handleSetMode() {
   Serial.println("handleSetMode()");
-  String modeID = server.arg("mode");
-  Serial.println("modeID=" + modeID);
+  uint8_t modeID = server.arg("mode").toInt();
+  uint8_t param = 0;
+  //
+  if (modeID == MODE_PERIODIC) 
+    param = server.arg("check_period").toInt();
+  if (modeID == MODE_IFCHANGED) 
+    param = server.arg("check_percents").toInt();
+  //
+  memset(tx, 0, BUFFER_SIZE);
+  tx[0] = CMD_SET_MODE;
+  tx[1] = 4;
+  tx[2] = modeID;
+  tx[3] = param;
+  fillTxCRC(tx);
+  //
+  DoUartTransmit();
+  //
+  Serial.println("modeID=" + (String)modeID + " param=" + (String)param);
   server.send(200, "text/plane", 0);
 }
 
 void handleSetAlerts() {
   Serial.println("handleSetAlerts()");    
+  //  
+  String s;
+  memset(tx, 0, BUFFER_SIZE);
+  tx[0] = CMD_SET_ALERTS;
+  uint8_t i = 2;
+  for (int j = 0; j < SENSORS_COUNT; j++) {    
+    s = (String)sensor_names[j];
+    tx[i++] = sensors[j].type;
+    tx[i++] = server.arg(s + "_alert_check").toInt();
+    tx[i++] = server.arg(s + "_alert_compare").toInt();
+    tx[i++] = server.arg(s + "_alert_value").toInt();
+  }
+  tx[1] = i;
+  fillTxCRC(tx);
+  //
+  DoUartTransmit();
+  //
   server.send(200, "text/plane", 0);
 }
 
@@ -92,7 +133,7 @@ void handleSetDevices() {
     s = (String)device_names[j] + "_switch";
     a = server.arg(s);    
     tx[i++] = j + 1;
-    tx[i++] = a.toInt() & 0xFF;    
+    tx[i++] = a.toInt();    
     Serial.println(s + "=" + a);
   }
   tx[1] = i;
@@ -211,6 +252,8 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started!");
   //
+  initSensors();
+  //
   delay(500);
   Serial.println("Setup!");      
 }
@@ -220,8 +263,8 @@ void printRX() {
     Serial.println("RX_" + (String)i + "=" + (String)(rx[i]));
 }
 
-uint8_t rx0, rx1;
-sensor* s; 
+uint8_t rx0, rx1, idx;
+sensor* psensor; 
 
 void loop() {  
   
@@ -240,10 +283,17 @@ void loop() {
     //
     if (rx0 == MSG_SENSORS_DATA) {
       printRX();
+      //      
+      for (int i = 0; i < rx[1] / 2; i++) {
+        idx = 2 + i * 4;
+        psensor = getSensorByType(rx[idx]);
+        if (!psensor) continue;
+        psensor->value = rx[idx + 1];        
+      }
       //
       for (int i = 0; i < SENSORS_COUNT; i++) {
         snprintf(mqtt_topic, 128, "%s/sensors/%s/value", MQTT_ROOT, sensor_names[i]);
-        snprintf(mqtt_value, 20, "%d", rx[i*2 + 3]);
+        snprintf(mqtt_value, 20, "%d", rx[i * 2 + 3]);
         client.publish(mqtt_topic, mqtt_value);
         snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_flag", MQTT_ROOT, sensor_names[i]);
         snprintf(mqtt_value, 20, "%d", 0);

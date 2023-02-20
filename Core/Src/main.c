@@ -90,7 +90,7 @@ uint8_t fl_uart = 0;
 uint8_t mode = MODE_PERIODIC;
 uint8_t periodValue = 5;
 uint8_t periodCount = 0;
-uint8_t percents = 0;
+uint8_t percentsValue = 0;
 
 device devices[DEVICES_COUNT];
 
@@ -120,13 +120,22 @@ void getSensorsData() {
 		__NOP();
 	}
 	psensor = getSensorByType(SENSOR_AMBIENT);
-	if (psensor) psensor->data = APDS9930[0].Lux & 0xFF;
+	if (psensor) {
+		psensor->previous_value = psensor->value;
+		psensor->value = APDS9930[0].Lux & 0xFF;
+	}
 	//
 	DHT_data d = DHT_getData(&dht11);
 	psensor = getSensorByType(SENSOR_TEMPERATURE);
-	if (psensor) psensor->data = (int)d.temp;
+	if (psensor) {
+		psensor->previous_value = psensor->value;
+		psensor->value = (int)d.temp;
+	}
 	psensor = getSensorByType(SENSOR_HUMIDITY);
-	if (psensor) psensor->data = (int)d.hum;
+	if (psensor) {
+		psensor->previous_value = psensor->value;
+		psensor->value = (int)d.hum;
+	}
 
 }
 
@@ -155,7 +164,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	periodCount++;
+	if (mode == MODE_PERIODIC)
+		periodCount++;
 }
 
 void fillTxSensorData() {
@@ -172,7 +182,7 @@ void fillTxSensorData() {
 
 	for (int j = 0; j < SENSORS_COUNT; j++) {
 		tx[i++] = sensors[j].type;
-		tx[i++] = sensors[j].data;
+		tx[i++] = sensors[j].value;
 	}
 
 	tx[1] = i;
@@ -193,6 +203,8 @@ void HandleUART() {
 	uint8_t rx0 = rx[0];
 	uint8_t rx1 = rx[1];
 
+	uint8_t idx;
+
 	uint8_t crc = getCRC(rx1, rx);
 
 	if (crc != rx[rx1]) {
@@ -212,20 +224,33 @@ void HandleUART() {
 	} else
 	//
 	if (rx0 == CMD_SET_MODE) {
-		mode = rx1;
+		mode = rx[2];
+		if (mode == MODE_PERIODIC)
+			periodValue = rx[3];
+		if (mode == MODE_IFCHANGED)
+			percentsValue = rx[3];
 	} else
 	//
 	if (rx0 == CMD_SET_ALERTS) {
-		__NOP();
+		for (int i = 0; i < rx[1] / 4; i++) {
+			idx = 2 + i * 4;
+			psensor = getSensorByType(rx[idx]);
+			if (!psensor) continue;
+			psensor->alert_check = rx[idx + 1];
+			psensor->alert_compare = rx[idx + 2];
+			psensor->alert_value = rx[idx + 3];
+		}
 	} else
 	//
     if (rx0 == CMD_SET_DEVICES) {
     	for (int i = 0; i < rx[1] / 2; i++)
-    		for (int j = 0; j < DEVICES_COUNT; j++)
-    			if (devices[j].type == rx[2 + i * 2]) {
-    				HAL_GPIO_WritePin(devices[j].port, devices[j].pin, rx[2 + i * 2 + 1]);
+    		for (int j = 0; j < DEVICES_COUNT; j++) {
+    			idx = 2 + i * 2;
+    			if (devices[j].type == rx[idx]) {
+    				HAL_GPIO_WritePin(devices[j].port, devices[j].pin, rx[idx + 1]);
     				break;
     			}
+    		}
     }
 
 }
@@ -278,12 +303,19 @@ int main(void)
 
   DoUartReceive();
 
+  uint8_t fl_send_data = 0;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  getSensorsData();
+
+	  fl_send_data = 0;
+
 	  if (fl_btn) {
 
 		  HandleButton();
@@ -302,12 +334,26 @@ int main(void)
 
 	  if ((mode == MODE_PERIODIC) && (periodCount >= periodValue)) {
 
-		  fillTxSensorData();
-		  DoUartTransmit();
+		  fl_send_data = 1;
 		  //
 		  periodCount = 0;
 
 	  }
+
+	  if (mode == MODE_IFCHANGED) {
+
+		  fl_send_data = checkSensorsPercents(percentsValue);
+
+	  }
+
+	  if (fl_send_data) {
+
+		  fillTxSensorData();
+		  DoUartTransmit();
+
+	  }
+
+	  HAL_Delay(500);
 
     /* USER CODE END WHILE */
 

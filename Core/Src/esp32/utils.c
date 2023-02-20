@@ -14,13 +14,11 @@ uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
 }
 
 void initSensors() {
-	sensors[0].type = SENSOR_TEMPERATURE;
-	sensors[1].type = SENSOR_HUMIDITY;
-	sensors[2].type = SENSOR_AMBIENT;
-	//
 	for (int i = 0; i < SENSORS_COUNT; i++) {
 		sensors[i].id = i;
-		sensors[i].data = 0;
+    sensors[i].type = i + 1;
+		sensors[i].value = 0;
+    sensors[i].previous_value = 0;
 		sensors[i].alert_check = 0;
 		sensors[i].alert_compare = 0;
 		sensors[i].alert_value = 0;
@@ -37,12 +35,35 @@ sensor* getSensorByType(uint8_t aSensorType) {
 
 uint8_t checkSensorsAlert() {
 	uint8_t result = 0;
-	for (int i = 0; i < SENSORS_COUNT; i++)
-		if (sensors[i].alert_check && (sensors[i].data > sensors[i].alert_value)) {
+  uint8_t cmp, sval, aval;
+	for (int i = 0; i < SENSORS_COUNT; i++) {
+    cmp = sensors[i].alert_compare;
+    sval = sensors[i].value;
+    aval = sensors[i].alert_value;
+		if (sensors[i].alert_check && (    
+        ((cmp == COMPARE_EQUAL) && (sval == aval)) ||
+        ((cmp == COMPARE_LESS) && (sval < aval)) ||
+        ((cmp == COMPARE_GREATER) && (sval > aval))
+		    ))
+    {
 			sensors[i].alert_flag = 1;
 			result = 1;
 		} else sensors[i].alert_flag = 0;
+	}   
 	return result;
+}
+
+uint8_t checkSensorsPercents(uint8_t aPercents) {
+  uint8_t result = 0;  
+  uint8_t d;
+  for (int i = 0; i < SENSORS_COUNT; i++) {
+    d = (int)(((float)sensors[i].value / (float)sensors[i].previous_value) * 100);
+    if (abs(100 - d) >= aPercents) {
+      result = 1;
+      break;
+    }
+  }
+  return result;
 }
 
 void fillTxCRC(uint8_t *aTx) {

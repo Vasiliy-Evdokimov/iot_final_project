@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#define BUFFER_SIZE		16
+#define BUFFER_SIZE 16
 
 #define SENSORS_COUNT 3
 #define DEVICES_COUNT 2 
@@ -34,8 +34,9 @@
 
 typedef struct {
 	uint8_t id;
-	uint8_t type;
-	uint8_t data;
+	uint8_t type;  
+	uint8_t value;
+  uint8_t previous_value;
 	uint8_t alert_check;
 	uint8_t alert_compare;
   uint8_t alert_value;
@@ -49,6 +50,8 @@ void initSensors();
 sensor* getSensorByType(uint8_t aSensorType);
 
 uint8_t checkSensorsAlert();
+
+uint8_t checkSensorsPercents(uint8_t aPercents);
 
 void fillTxCRC(uint8_t *aTx);
 
