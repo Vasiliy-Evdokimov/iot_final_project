@@ -70,11 +70,9 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN 0 */
 
 typedef struct {
-	uint8_t id;
 	uint8_t type;
 	GPIO_TypeDef* port;
 	uint16_t pin;
-	GPIO_PinState state;
 } device;
 
 extern sensor sensors[SENSORS_COUNT];
