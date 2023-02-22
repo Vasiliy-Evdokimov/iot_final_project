@@ -236,6 +236,7 @@ void HandleUART() {
 	uint8_t rx1 = rx[1];
 
 	uint8_t idx;
+	uint8_t fl_transmit = 0;
 
 	uint8_t crc = getCRC(rx1, rx);
 
@@ -252,7 +253,7 @@ void HandleUART() {
 
 	if (rx0 == CMD_GET_SENSORS) {
 		fillTxSensorData();
-		DoUartTransmit();
+		fl_transmit = 1;
 	} else
 	//
 	if (rx0 == CMD_SET_MODE) {
@@ -261,11 +262,14 @@ void HandleUART() {
 			current_mode.period = rx[3];
 		if (current_mode.type == MODE_IFCHANGED)
 			current_mode.percents = rx[3];
+		//
+		fillTxModeData();
+		fl_transmit = 1;
 	} else
 	//
 	if (rx0 == CMD_GET_MODE) {
 		fillTxModeData();
-		DoUartTransmit();
+		fl_transmit = 1;
 	}
 	//
 	if (rx0 == CMD_SET_ALERTS) {
@@ -293,13 +297,17 @@ void HandleUART() {
     				break;
     			}
     		}
+    	//
+    	fillTxDevicesData();
+    	fl_transmit = 1;
     } else
     //
     if (rx0 == CMD_GET_DEVICES) {
     	fillTxDevicesData();
-    	DoUartTransmit();
+    	fl_transmit = 1;
     }
 
+	if (fl_transmit) DoUartTransmit();
 
 }
 

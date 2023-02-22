@@ -37,8 +37,39 @@ const char MAIN_page[] PROGMEM = R"=(
     
     setInterval(function() { getStatus(); }, 2000);
 
-    var sensors = ["temperature", "humidity", "ambient"];
+    var sensors = ["temperature", "humidity", "ambient"];    
     var devices = ["led", "fan"];
+    var compare = ["=", "<", ">"];
+
+    function initElements() {
+      var html = '';
+      //
+      var sensors_div = document.getElementById("sensors");
+      html = '<div>SENSORS:</div>';
+      //
+      sensors.forEach(function(sensor_name, sensor_id, arr) {
+        html += 
+          '<div>' + 
+          sensor_name + ':&nbsp;<span id="' + sensor_name + '_value">0</span>' +
+          '<input id="' + sensor_name + '_alert_check" type="checkbox" name="alert_check">' +          
+          '<select id="' + sensor_name + '_alert_compare" class="alert_compare" name="' + sensor_name + '_alert_compare" size="1">';          
+        compare.forEach(function(compare_name, compare_id, arr) {
+          html += '<option value=' + (compare_id + 1) + '>' + compare_name + '</option>';
+        });
+        html += '</select>';
+        html += '<input id="' + sensor_name + '_alert_value" type="number" class="alert_value" value="5">';
+        html += '</div>';          
+      });
+      sensors_div.innerHTML = html;
+      //
+      var devices_div = document.getElementById("devices");
+      html = '<div>DEVICES:</div>';
+      //
+      devices.forEach(function(device_name, device_id, arr) {
+        html += '<div><input type="checkbox" id="' + device_name +  '_switch" onchange="setDevices()"> ' + device_name + '</div>';
+      });
+      devices_div.innerHTML = html;
+    }
 
     function handleStatus(status) {
       console.log("status.sensors=" + status.sensors);
@@ -142,48 +173,10 @@ const char MAIN_page[] PROGMEM = R"=(
 
   </script>
 </head>
-<body>
+<body onload="initElements()">
   <div class="outer">
     <div class="inner">      
-      <div class="sensors">
-        <div>SENSORS:</div>
-        <div>
-          Temperature:&nbsp;<span id="temperature_value">0</span>
-
-          <input id="temperature_alert_check" type="checkbox" name="alert_check">
-          <select id="temperature_alert_compare" class="alert_compre" name="temperature_alert_compare" size="1">
-            <option value=1>=</option>
-            <option value=2><</option>
-            <option value=3>></option>
-          </select>
-          <input id="temperature_alert_value" type="number" class="alert_value" value="5">
-
-        <div>
-        <div>
-          Humidity:&nbsp;<span id="humidity_value">0</span>
-
-          <input id="humidity_alert_check" type="checkbox" name="alert_check">
-          <select id="humidity_alert_compare" class="alert_compre" name="temperature_alert_compare" size="1">
-            <option value=1>=</option>
-            <option value=2><</option>
-            <option value=3>></option>
-          </select>
-          <input id="humidity_alert_value" type="number" class="alert_value" value="5">
-          
-        <div>
-        <div>
-          Ambient:&nbsp;<span id="ambient_value">0</span>
-
-          <input id="ambient_alert_check" type="checkbox" name="alert_check">
-          <select id="ambient_alert_compare" class="alert_compre" name="temperature_alert_compare" size="1">
-            <option value=1>=</option>
-            <option value=2><</option>
-            <option value=3>></option>
-          </select>
-          <input id="ambient_alert_value" type="number" class="alert_value" value="5">
-
-        <div>              
-      </div>
+      <div class="sensors" id="sensors"></div>
       <button onclick="setAlerts()">SET ALERTS</button>
       <br><br>
       <div class="settings">
@@ -203,14 +196,7 @@ const char MAIN_page[] PROGMEM = R"=(
         <button onclick="setMode()">SET MODE</button>
       </div>
       <br><br>
-      <div class="devices">
-        <div>DEVICES:</div>
-        <div><input type="checkbox" id="led_switch" onchange="setDevices()"> led</div>
-        <div><input type="checkbox" id="fan_switch" onchange="setDevices()"> fan</div>
-      </div>        
-      <!--
-      <button class="test_btn" onclick="btnClick()">TEST</button>
-      -->
+      <div class="devices" id="devices"></div>
     </div>
   </div>
 </div>
