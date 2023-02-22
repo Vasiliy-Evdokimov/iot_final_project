@@ -78,6 +78,8 @@ typedef struct {
 } device;
 
 extern sensor sensors[SENSORS_COUNT];
+extern device_state devices_states[DEVICES_COUNT];
+extern mode current_mode;
 
 uint8_t tx[BUFFER_SIZE];
 uint8_t rx[BUFFER_SIZE];
@@ -87,10 +89,7 @@ DHT_sensor dht11 = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 uint8_t fl_btn = 0;
 uint8_t fl_uart = 0;
 
-uint8_t mode = MODE_PERIODIC;
-uint8_t periodValue = 5;
 uint8_t periodCount = 0;
-uint8_t percentsValue = 0;
 
 device devices[DEVICES_COUNT];
 
@@ -98,17 +97,13 @@ sensor* psensor;
 device* pdevice;
 
 void initDevices() {
-	devices[0].id = 0;
 	devices[0].type = DEVICE_LED;
 	devices[0].port = GPIOB;
 	devices[0].pin = GPIO_PIN_4;
-	devices[0].state = GPIO_PIN_RESET;
 	//
-	devices[1].id = 1;
 	devices[1].type = DEVICE_FAN;
 	devices[1].port = GPIOB;
 	devices[1].pin = GPIO_PIN_5;
-	devices[1].state = GPIO_PIN_RESET;
 }
 
 void getSensorsData() {
@@ -164,7 +159,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	if (mode == MODE_PERIODIC)
+	if (current_mode.type == MODE_PERIODIC)
 		periodCount++;
 }
 
@@ -172,7 +167,7 @@ void fillTxSensorData() {
 
 	memset(tx, 0, BUFFER_SIZE);
 
-	tx[0] = MSG_SENSORS_DATA;
+	tx[0] = MSG_SENSORS;
 
 	getSensorsData();
 
@@ -183,6 +178,43 @@ void fillTxSensorData() {
 	for (int j = 0; j < SENSORS_COUNT; j++) {
 		tx[i++] = sensors[j].type;
 		tx[i++] = sensors[j].value;
+		tx[i++] = sensors[j].alert_check;
+		tx[i++] = sensors[j].alert_compare;
+		tx[i++] = sensors[j].alert_value;
+		tx[i++] = sensors[j].alert_flag;
+	}
+
+	tx[1] = i;
+
+	fillTxCRC(tx);
+
+}
+
+void fillTxModeData() {
+
+	memset(tx, 0, BUFFER_SIZE);
+	//
+	tx[0] = MSG_MODE;
+	tx[1] = 5;
+	tx[2] = current_mode.type;
+	tx[3] = current_mode.period;
+	tx[4] = current_mode.percents;
+	//
+	fillTxCRC(tx);
+
+}
+
+void fillTxDevicesData() {
+
+	memset(tx, 0, BUFFER_SIZE);
+
+	tx[0] = MSG_DEVICES;
+
+	uint8_t i = 2;
+
+	for (int j = 0; j < DEVICES_COUNT; j++) {
+		tx[i++] = devices_states[j].type;
+		tx[i++] = devices_states[j].value;
 	}
 
 	tx[1] = i;
@@ -218,18 +250,23 @@ void HandleUART() {
 
 	memset(tx, 0, BUFFER_SIZE);
 
-	if (rx0 == CMD_GET_SENSORS_DATA) {
+	if (rx0 == CMD_GET_SENSORS) {
 		fillTxSensorData();
 		DoUartTransmit();
 	} else
 	//
 	if (rx0 == CMD_SET_MODE) {
-		mode = rx[2];
-		if (mode == MODE_PERIODIC)
-			periodValue = rx[3];
-		if (mode == MODE_IFCHANGED)
-			percentsValue = rx[3];
+		current_mode.type = rx[2];
+		if (current_mode.type == MODE_PERIODIC)
+			current_mode.period = rx[3];
+		if (current_mode.type == MODE_IFCHANGED)
+			current_mode.percents = rx[3];
 	} else
+	//
+	if (rx0 == CMD_GET_MODE) {
+		fillTxModeData();
+		DoUartTransmit();
+	}
 	//
 	if (rx0 == CMD_SET_ALERTS) {
 		for (int i = 0; i < rx[1] / 4; i++) {
@@ -247,11 +284,22 @@ void HandleUART() {
     		for (int j = 0; j < DEVICES_COUNT; j++) {
     			idx = 2 + i * 2;
     			if (devices[j].type == rx[idx]) {
-    				HAL_GPIO_WritePin(devices[j].port, devices[j].pin, rx[idx + 1]);
+    				devices_states[j].value = rx[idx + 1];
+    				HAL_GPIO_WritePin(
+    					devices[j].port,
+						devices[j].pin,
+						devices_states[j].value
+    				);
     				break;
     			}
     		}
+    } else
+    //
+    if (rx0 == CMD_GET_DEVICES) {
+    	fillTxDevicesData();
+    	DoUartTransmit();
     }
+
 
 }
 
@@ -291,8 +339,11 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
-  initDevices();
   initSensors();
+  initDevices();
+  initDevicesStates();
+  initMode();
+
 
   HAL_TIM_Base_Start_IT(&htim3);
 
@@ -332,7 +383,8 @@ int main(void)
 
 	  }
 
-	  if ((mode == MODE_PERIODIC) && (periodCount >= periodValue)) {
+	  if ((current_mode.type == MODE_PERIODIC) &&
+		  (periodCount >= current_mode.period)) {
 
 		  fl_send_data = 1;
 		  //
@@ -340,9 +392,9 @@ int main(void)
 
 	  }
 
-	  if (mode == MODE_IFCHANGED) {
+	  if (current_mode.type  == MODE_IFCHANGED) {
 
-		  fl_send_data = checkSensorsPercents(percentsValue);
+		  fl_send_data = checkSensorsPercents(current_mode.percents);
 
 	  }
 

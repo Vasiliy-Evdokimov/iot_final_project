@@ -51,6 +51,10 @@ uint8_t rx[BUFFER_SIZE] = {0};
 char mqtt_topic[128];
 char mqtt_value[20];
 
+extern sensor sensors[SENSORS_COUNT];
+extern device_state devices_states[DEVICES_COUNT];
+extern mode current_mode;
+
 void DoUartTransmit() {
   if (!tx[0]) return;
   Serial2.flush();
@@ -62,18 +66,40 @@ void handleRoot() {
 }
 
 void handleGetStatus() {
-  String json2 = "{\"sensors\": [";  
-  for (int i = 0; i < SENSORS_COUNT; i++) {
-    //  
-  }
-  json2 += "]}";
+  String json = "{"; 
+  //  
+  json += String("\"mode\": {") + 
+    "\"type\": " + String(current_mode.type) + ", " +  
+    "\"period\": " + String(current_mode.period) + ", " + 
+    "\"percent\": " + String(current_mode.percents) +
+  "}";  
   //
-  const char* json = 
-    "{\"sensors\": ["
-      "{\"name\": \"temperature\", \"data\": {\"value\": 1, \"alert_flag\": 0}}, " 
-      "{\"name\": \"humidity\", \"data\": {\"value\": 2, \"alert_flag\": 0}}, "
-      "{\"name\": \"ambient\", \"data\": {\"value\": 3, \"alert_flag\": 0}}"
-    "]}";
+  json += ", \"sensors\": [";  
+  for (int i = 0; i < SENSORS_COUNT; i++) {
+      json += "{\"name\": \"" + String(sensor_names[i]) +  "\", " + 
+        "\"data\": {" + 
+          "\"value\": " + String(sensors[i].value) + ", " +
+          "\"alert_check\": " + String(sensors[i].alert_check) + ", " +
+          "\"alert_compare\": " + String(sensors[i].alert_compare) +  ", " +
+          "\"alert_value\": " + String(sensors[i].alert_value) +  ", " +          
+          "\"alert_flag\": " + String(sensors[i].alert_flag) + 
+        "}}";
+      json += (i < SENSORS_COUNT - 1) ? ", " : "";         
+  }
+  json += "]";
+  //  
+  json += ", \"devices\": [";  
+  for (int i = 0; i < DEVICES_COUNT; i++) {
+    json += String("{") +
+      "\"name\": \"" + String(device_names[i]) +  "\", " + 
+      "\"value\": " + String(devices_states[i].value) + 
+    "}";
+    json += (i < DEVICES_COUNT - 1) ? ", " : "";
+  }  
+  json += "]";  
+  //
+  json += "}";
+  //  
   server.send(200, "text/plane", json);
 }
 
@@ -96,7 +122,7 @@ void handleSetMode() {
   //
   DoUartTransmit();
   //
-  Serial.println("modeID=" + (String)modeID + " param=" + (String)param);
+  Serial.println("modeID=" + String(modeID) + " param=" + String(param));
   server.send(200, "text/plane", 0);
 }
 
@@ -108,7 +134,7 @@ void handleSetAlerts() {
   tx[0] = CMD_SET_ALERTS;
   uint8_t i = 2;
   for (int j = 0; j < SENSORS_COUNT; j++) {    
-    s = (String)sensor_names[j];
+    s = String(sensor_names[j]);
     tx[i++] = sensors[j].type;
     tx[i++] = server.arg(s + "_alert_check").toInt();
     tx[i++] = server.arg(s + "_alert_compare").toInt();
@@ -130,7 +156,7 @@ void handleSetDevices() {
   tx[0] = CMD_SET_DEVICES;
   uint8_t i = 2;
   for (int j = 0; j < DEVICES_COUNT; j++) {
-    s = (String)device_names[j] + "_switch";
+    s = String(device_names[j]) + "_switch";
     a = server.arg(s);    
     tx[i++] = j + 1;
     tx[i++] = a.toInt();    
@@ -149,7 +175,7 @@ void receivedCallback(char* topic, byte* payload, unsigned int length) {
   Serial.println(topic);
   //
   char buf[20] = {0};
-  Serial.print("length = " + (String)length + "; payload = ");
+  Serial.print("length = " + String(length) + "; payload = ");
   for (int i = 0; i < length; i++)
     buf[i] = (char)payload[i];
   Serial.println(buf);
@@ -158,7 +184,7 @@ void receivedCallback(char* topic, byte* payload, unsigned int length) {
 void mqttconnect() {
   while (!client.connected()) {
     Serial.print("MQTT connecting... ");
-    String clientId = "Evdokimov_VI_ESP32";
+    String clientId = MQTT_CLIENT_ID;
     if (client.connect(clientId.c_str())) {
       Serial.println("Connected!");
       topicsSubscribe();
@@ -253,6 +279,8 @@ void setup() {
   Serial.println("HTTP server started!");
   //
   initSensors();
+  initDevicesStates();
+  initMode();
   //
   delay(500);
   Serial.println("Setup!");      
@@ -260,11 +288,12 @@ void setup() {
 
 void printRX() {
   for (int i = 0; i < rx[1]; i++) 
-    Serial.println("RX_" + (String)i + "=" + (String)(rx[i]));
+    Serial.println("RX_" + String(i) + "=" + String(rx[i]));
 }
 
 uint8_t rx0, rx1, idx;
 sensor* psensor; 
+device_state* pdevice_state; 
 
 void loop() {  
   
@@ -273,7 +302,7 @@ void loop() {
     rx0 = rx[0];
     rx1 = rx[1];
     //    
-    uint8_t crc = getCRC(rx1, rx);
+    uint8_t crc = getCRC(rx1, rx);    
     //
     if (crc != rx[rx1]) {
       Serial.println("CRC failed!");
@@ -281,14 +310,24 @@ void loop() {
       break;      
     }
     //
-    if (rx0 == MSG_SENSORS_DATA) {
-      printRX();
-      //      
-      for (int i = 0; i < rx[1] / 2; i++) {
-        idx = 2 + i * 4;
+    printRX();
+    //
+    if (rx0 == MSG_MODE) {
+      current_mode.type = rx[2];
+      current_mode.period = rx[3];
+      current_mode.percents = rx[4];
+    } else
+    //
+    if (rx0 == MSG_SENSORS) {
+      for (int i = 0; i < rx1 / 6; i++) {
+        idx = 2 + i * 6;
         psensor = getSensorByType(rx[idx]);
         if (!psensor) continue;
         psensor->value = rx[idx + 1];        
+        psensor->alert_check = rx[idx + 2];
+        psensor->alert_compare = rx[idx + 3];
+        psensor->alert_value = rx[idx + 4];
+        psensor->alert_flag = rx[idx + 5];
       }
       //
       for (int i = 0; i < SENSORS_COUNT; i++) {
@@ -301,7 +340,17 @@ void loop() {
         delay(100);
       }     
       Serial.println("Published!");
-    }    
+    } else
+    //
+    if (rx0 == MSG_DEVICES) {
+       for (int i = 0; i < rx1 / 2; i++) {
+        idx = 2 + i * 2;
+        pdevice_state = getDeviceStateByType(rx[idx]);
+        if (!pdevice_state) continue;
+        pdevice_state->value = rx[idx + 1];
+      }
+    }
+        
   } 
   //
   if (!client.connected()) {

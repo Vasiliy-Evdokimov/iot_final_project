@@ -4,6 +4,8 @@
 #include "utils.h"
 
 sensor sensors[SENSORS_COUNT];
+device_state devices_states[DEVICES_COUNT];
+mode current_mode; 
 
 uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
     uint8_t res = 0;
@@ -19,11 +21,25 @@ void initSensors() {
     sensors[i].type = i + 1;
 		sensors[i].value = 0;
     sensors[i].previous_value = 0;
+    sensors[i].alert_flag = 0;    
+    //
 		sensors[i].alert_check = 0;
-		sensors[i].alert_compare = 0;
-		sensors[i].alert_value = 0;
-    sensors[i].alert_flag = 0;
+		sensors[i].alert_compare = COMPARE_EQUAL;
+		sensors[i].alert_value = 5;    
 	}
+}
+
+void initDevicesStates() {
+  for (int i = 0; i < DEVICES_COUNT; i++) {
+    devices_states[i].type = i + 1;
+    devices_states[i].value = 0;
+  }
+}
+
+void initMode() {
+  current_mode.type = MODE_PERIODIC;
+  current_mode.period = 5;
+  current_mode.percents = 5;
 }
 
 sensor* getSensorByType(uint8_t aSensorType) {
@@ -64,6 +80,13 @@ uint8_t checkSensorsPercents(uint8_t aPercents) {
     }
   }
   return result;
+}
+
+device_state* getDeviceStateByType(uint8_t aDeviceType) {
+  for (int i = 0; i < DEVICES_COUNT; i++)
+    if (devices_states[i].type == aDeviceType)
+      return &devices_states[i];
+  return NULL;
 }
 
 void fillTxCRC(uint8_t *aTx) {
