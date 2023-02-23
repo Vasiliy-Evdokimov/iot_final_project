@@ -62,7 +62,7 @@ void DoUartTransmit() {
 }
 
 void handleRoot() {  
-  server.send(200, "text/html", MAIN_page);
+  server.send(200, "text/html", main_page);
 }
 
 void handleGetStatus() {
