@@ -41,8 +41,8 @@ const char* device_params[] = {
 };
 
 const char* device_names[] = {
-  "led",
-  "fan"
+  "led_red",
+  "led_blue"
 };
 
 uint8_t tx[BUFFER_SIZE] = {0};
@@ -267,10 +267,10 @@ void setup() {
   Serial.println(WiFi.localIP());
   //  
   client.setServer(mqtt_server, mqtt_port);  
-  //  
+  //    
   mqttconnect();
   topicsInit();  
-  topicsSubscribe();
+  topicsSubscribe();  
   //
   client.setCallback(receivedCallback);
   //
@@ -329,7 +329,7 @@ void loop() {
         psensor->alert_value = rx[idx + 4];
         psensor->alert_flag = rx[idx + 5];
       }
-      //
+      //      
       for (int i = 0; i < SENSORS_COUNT; i++) {
         snprintf(mqtt_topic, 128, "%s/sensors/%s/value", MQTT_ROOT, sensor_names[i]);
         snprintf(mqtt_value, 20, "%d", rx[i * 2 + 3]);
@@ -339,7 +339,7 @@ void loop() {
         client.publish(mqtt_topic, mqtt_value);
         delay(100);
       }     
-      Serial.println("Published!");
+      Serial.println("Published!");      
     } else
     //
     if (rx0 == MSG_DEVICES) {
@@ -352,11 +352,11 @@ void loop() {
     }
         
   } 
-  //
+  //  
   if (!client.connected()) {
     mqttconnect();
     topicsSubscribe();
-  }
+  }  
   //
   client.loop();
   //

@@ -95,11 +95,11 @@ sensor* psensor;
 device* pdevice;
 
 void initDevices() {
-	devices[0].type = DEVICE_LED;
+	devices[0].type = DEVICE_LED_RED;
 	devices[0].port = GPIOB;
 	devices[0].pin = GPIO_PIN_4;
 	//
-	devices[1].type = DEVICE_FAN;
+	devices[1].type = DEVICE_LED_BLUE;
 	devices[1].port = GPIOB;
 	devices[1].pin = GPIO_PIN_5;
 }

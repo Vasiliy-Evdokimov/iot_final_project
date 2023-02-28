@@ -73,7 +73,7 @@
     }    
 
     .table_header {
-      background: #c5c3c3;
+      background: #afcde7;
       font-weight: bold;
     }
 
@@ -110,7 +110,7 @@
 
     .column_header,
     .table_footer {
-      background: #e7e7e7;
+      background: #d8e6f3;
     }   
 
   </style>
@@ -120,7 +120,7 @@
     setInterval(function() { getStatus(); }, 2000);
 
     var sensors = ["temperature", "humidity", "ambient"];    
-    var devices = ["led", "fan"];
+    var devices = ["led_red", "led_blue"];
     var compare = ["=", "<", ">"];
 
     function initElements() {
@@ -296,7 +296,7 @@
         q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
       });
       q = q.substring(0, q.length - 1);
-      //alert(q);      
+      alert(q);      
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();      
@@ -318,7 +318,7 @@
               <td colspan="2" class="table_header">CHECK MODE</td>
             </tr>
             <tr>
-              <td colspan="2">current:&nbsp;<span id="current_mode">(current mode description)</span></td>
+              <td colspan="2">current:&nbsp;<span id="current_mode">?</span></td>
             </tr>
             <tr>
               <td><input name="check_mode" class="check_mode" type="radio" value=1 checked>with a frequency of

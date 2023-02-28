@@ -79,7 +79,7 @@ const char main_page[] PROGMEM = R"=(
     }    
 
     .table_header {
-      background: #c5c3c3;
+      background: #afcde7;
       font-weight: bold;
     }
 
@@ -116,7 +116,7 @@ const char main_page[] PROGMEM = R"=(
 
     .column_header,
     .table_footer {
-      background: #e7e7e7;
+      background: #d8e6f3;
     }   
 
   </style>
@@ -126,7 +126,7 @@ const char main_page[] PROGMEM = R"=(
     setInterval(function() { getStatus(); }, 2000);
 
     var sensors = ["temperature", "humidity", "ambient"];    
-    var devices = ["led", "fan"];
+    var devices = ["led_red", "led_blue"];
     var compare = ["=", "<", ">"];
 
     function initElements() {
@@ -324,7 +324,7 @@ const char main_page[] PROGMEM = R"=(
               <td colspan="2" class="table_header">CHECK MODE</td>
             </tr>
             <tr>
-              <td colspan="2">current:&nbsp;<span id="current_mode">(current mode description)</span></td>
+              <td colspan="2">current:&nbsp;<span id="current_mode">?</span></td>
             </tr>
             <tr>
               <td><input name="check_mode" class="check_mode" type="radio" value=1 checked>with a frequency of

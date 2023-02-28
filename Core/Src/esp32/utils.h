@@ -17,8 +17,8 @@
 #define SENSOR_HUMIDITY 2
 #define SENSOR_AMBIENT 3
 
-#define DEVICE_LED 1
-#define DEVICE_FAN 2
+#define DEVICE_LED_RED 1
+#define DEVICE_LED_BLUE 2
 
 #define CMD_GET_SENSORS 1
 //
