@@ -117,8 +117,9 @@
 
   <script>
     
-    setInterval(function() { getStatus(); }, 2000);
-
+    setInterval(function() { getStatus(); }, 1000);
+    
+    var mode_descriptions = ["with a frequency of", "with a change of", "on command"];
     var sensors = ["temperature", "humidity", "ambient"];    
     var devices = ["led_red", "led_blue"];
     var compare = ["=", "<", ">"];
@@ -166,7 +167,7 @@
       html += 
             '<tr class="table_footer">' +
               '<td colspan="4">' +
-                '<button onclick="setAlerts()">SET SETTINGS</button>' +
+                '<button onclick="setAlerts()">SET ALERTS</button>' +
               '</td>' +
             '</tr>' +
           '</table>';
@@ -196,26 +197,57 @@
             '<td>' + device_name[0].toUpperCase() + device_name.slice(1) + '</td>' +
             '<td id="' + device_name + '_current_state">?</td>' +
             '<td>' +
-              '<input type="checkbox" class="device_switch" id="' + device_name + '_switch" onchange="setDevices()">' + 
+              '<input type="checkbox" class="device_switch" id="' + device_name + '_switch">' +
             '</td>' +
           '</tr>';
       });
       //
-      html += '</table>';
+      html += 
+            '<tr class="table_footer">' +
+              '<td colspan="3">' +
+                '<button onclick="setDevices()">SET STATES</button>' +
+              '</td>' +
+            '</tr>' +
+          '</table>';
       //
       devices_td.innerHTML = html;      
     }
 
-    function handleStatus(status) {
-      console.log("status.sensors=" + status.sensors);
+    function handleStatus(status) {      
+      if (status.mode != undefined) {        
+        let mode = mode_descriptions[status.mode.type - 1];
+        if (status.mode.type == 1)
+          mode += " " + status.mode.period + " seconds";
+        if (status.mode.type == 2)
+          mode += " " + status.mode.percent + " percents";
+        document.getElementById("current_mode").innerText = mode;
+      }
+      //
       if (status.sensors != undefined)
         for (let i = 0; i < status.sensors.length; i++) {
           sensor_name = status.sensors[i].name;
-          sensor_value = status.sensors[i].data.value;
-          console.log(sensor_name);
-          document.getElementById(sensor_name + "_current_value").innerText = sensor_value;    
-        }        
-    }           
+          sensor_value = status.sensors[i].data.value;          
+          let sensor_value_obj = document.getElementById(sensor_name + "_current_value");
+          sensor_value_obj.innerText = sensor_value;
+          sensor_value_obj.style.color = (status.sensors[i].data.alert_flag == 1) ? "red" : "black";
+          //
+          let alert_value = "?";
+          if (status.sensors[i].data.alert_check == 0)
+            alert_value = "not checked";
+          else
+            alert_value = 
+              compare[status.sensors[i].data.alert_compare - 1] + " " + 
+              status.sensors[i].data.alert_value;
+          document.getElementById(sensor_name + "_current_alert").innerText = alert_value;
+        }
+      //
+      if (status.devices != undefined) 
+        for (let i = 0; i < status.devices.length; i++) {
+          device_name = status.devices[i].name;
+          device_value = (status.devices[i].value == 0) ? "off" : "on";
+          document.getElementById(device_name + "_current_state").innerText = device_value;
+        }
+    }
 
     function getStatus() {     
       var xhttp = new XMLHttpRequest();
@@ -296,7 +328,7 @@
         q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
       });
       q = q.substring(0, q.length - 1);
-      alert(q);      
+      //alert(q);      
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();      
@@ -307,6 +339,7 @@
     }
 
   </script>
+  <title>V_Evdokimov's ESP32 Final project</title>
 </head>
 <body onload="initElements()">
   <div class="outer">

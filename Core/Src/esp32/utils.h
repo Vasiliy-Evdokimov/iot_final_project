@@ -30,6 +30,8 @@
 //
 #define CMD_SET_DEVICES 6
 #define CMD_GET_DEVICES 7
+//
+#define CMD_GET_STATUS 8
 
 #define COMPARE_EQUAL 1
 #define COMPARE_LESS 2

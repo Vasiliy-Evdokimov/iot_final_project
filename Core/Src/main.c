@@ -226,6 +226,19 @@ void HandleButton() {
 	DoUartTransmit();
 }
 
+void sendCompleteStatus() {
+	fillTxModeData();
+	DoUartTransmit();
+	HAL_Delay(300);
+	//
+	fillTxSensorData();
+	DoUartTransmit();
+	HAL_Delay(300);
+	//
+	fillTxDevicesData();
+	DoUartTransmit();
+}
+
 void HandleUART() {
 
 	DoUartReceive();
@@ -279,6 +292,9 @@ void HandleUART() {
 			psensor->alert_compare = rx[idx + 2];
 			psensor->alert_value = rx[idx + 3];
 		}
+		//
+		fillTxSensorData();
+		fl_transmit = 1;
 	} else
 	//
     if (rx0 == CMD_SET_DEVICES) {
@@ -303,6 +319,10 @@ void HandleUART() {
     if (rx0 == CMD_GET_DEVICES) {
     	fillTxDevicesData();
     	fl_transmit = 1;
+    } else
+    //
+    if (rx0 == CMD_GET_STATUS) {
+    	sendCompleteStatus();
     }
 
 	if (fl_transmit) DoUartTransmit();
@@ -361,6 +381,8 @@ int main(void)
   DoUartReceive();
 
   uint8_t fl_send_data = 0;
+
+  sendCompleteStatus();
 
   /* USER CODE END 2 */
 

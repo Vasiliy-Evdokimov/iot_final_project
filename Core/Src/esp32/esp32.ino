@@ -55,13 +55,35 @@ extern sensor sensors[SENSORS_COUNT];
 extern device_state devices_states[DEVICES_COUNT];
 extern mode current_mode;
 
+uint8_t rx0, rx1, idx;
+sensor* psensor;
+device_state* pdevice_state;
+
+void print_buffer(uint8_t* aBuf, String aPrefix) {
+  for (int i = 0; i < aBuf[1]; i++) 
+    Serial.println(aPrefix + "_" + String(i) + "=" + String(aBuf[i]));
+}
+
 void DoUartTransmit() {
   if (!tx[0]) return;
   Serial2.flush();
   Serial2.write(tx, BUFFER_SIZE);
 }
 
+void getCompleteStatus() {
+  memset(tx, 0, BUFFER_SIZE);
+  tx[0] = CMD_GET_STATUS;
+  tx[1] = 2;
+  fillTxCRC(tx);
+  //
+  DoUartTransmit();
+}
+
 void handleRoot() {  
+  Serial.println("handleRoot()");
+  //
+  getCompleteStatus();
+  //
   server.send(200, "text/html", main_page);
 }
 
@@ -100,6 +122,8 @@ void handleGetStatus() {
   //
   json += "}";
   //  
+  //Serial.println("json = " + json);
+  //
   server.send(200, "text/plane", json);
 }
 
@@ -142,6 +166,8 @@ void handleSetAlerts() {
   }
   tx[1] = i;
   fillTxCRC(tx);
+  //
+  print_buffer(tx, "TX");
   //
   DoUartTransmit();
   //
@@ -198,10 +224,13 @@ void mqttconnect() {
 }
 
 void topicsInit() {
-  snprintf(mqtt_topic, 128, "%s/sensors/settings/mode", MQTT_ROOT);
+  snprintf(mqtt_topic, 128, "%s/settings/mode", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", MODE_PERIODIC);
   client.publish(mqtt_topic, mqtt_value);
-  snprintf(mqtt_topic, 128, "%s/sensors/settings/period", MQTT_ROOT);
+  snprintf(mqtt_topic, 128, "%s/settings/period", MQTT_ROOT);
+  snprintf(mqtt_value, 20, "%d", 5);
+  client.publish(mqtt_topic, mqtt_value);
+  snprintf(mqtt_topic, 128, "%s/settings/percents", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", 5);
   client.publish(mqtt_topic, mqtt_value);
   //
@@ -222,7 +251,7 @@ void topicsInit() {
 
 void topicsSubscribe() {
   for (int i = 0; i < 2; i++) {
-    snprintf(mqtt_topic, 128, "%s/sensors/settings/%s", MQTT_ROOT, sensors_settings[i]);
+    snprintf(mqtt_topic, 128, "%s/settings/%s", MQTT_ROOT, sensors_settings[i]);
     client.subscribe(mqtt_topic);
   }
   //
@@ -278,22 +307,15 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started!");
   //
-  initSensors();
-  initDevicesStates();
   initMode();
+  initSensors();
+  initDevicesStates();  
   //
   delay(500);
-  Serial.println("Setup!");      
+  Serial.println("Setup!");  
+  //
+  getCompleteStatus();    
 }
-
-void printRX() {
-  for (int i = 0; i < rx[1]; i++) 
-    Serial.println("RX_" + String(i) + "=" + String(rx[i]));
-}
-
-uint8_t rx0, rx1, idx;
-sensor* psensor; 
-device_state* pdevice_state; 
 
 void loop() {  
   
@@ -310,7 +332,7 @@ void loop() {
       break;      
     }
     //
-    printRX();
+    print_buffer(rx, "RX");
     //
     if (rx0 == MSG_MODE) {
       current_mode.type = rx[2];
