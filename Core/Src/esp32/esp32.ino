@@ -16,28 +16,10 @@ WebServer server(80);
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-const char* sensors_settings[] = {
-  "mode",
-  "period",
-  "percents"
-};
-
-const char* sensor_params[] = {
-  "value",
-  "alert_check",
-  "alert_compare",
-  "alert_value",
-  "alert_flag"
-};
-
 const char* sensor_names[] = {
   "temperature",
   "humidity",
   "ambient"
-};
-
-const char* device_params[] = {
-  "state"
 };
 
 const char* device_names[] = {
@@ -196,24 +178,12 @@ void handleSetDevices() {
   server.send(200, "text/plane", 0);
 }
 
-void receivedCallback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message received: ");
-  Serial.println(topic);
-  //
-  char buf[20] = {0};
-  Serial.print("length = " + String(length) + "; payload = ");
-  for (int i = 0; i < length; i++)
-    buf[i] = (char)payload[i];
-  Serial.println(buf);
-}
-
 void mqttconnect() {
   while (!client.connected()) {
     Serial.print("MQTT connecting... ");
     String clientId = MQTT_CLIENT_ID;
     if (client.connect(clientId.c_str())) {
       Serial.println("Connected!");
-      topicsSubscribe();
     } else {
       Serial.print("Failed, status code = ");
       Serial.print(client.state());
@@ -221,51 +191,6 @@ void mqttconnect() {
       delay(5000);
     }
   }
-}
-
-void topicsInit() {
-  snprintf(mqtt_topic, 128, "%s/settings/mode", MQTT_ROOT);
-  snprintf(mqtt_value, 20, "%d", MODE_PERIODIC);
-  client.publish(mqtt_topic, mqtt_value);
-  snprintf(mqtt_topic, 128, "%s/settings/period", MQTT_ROOT);
-  snprintf(mqtt_value, 20, "%d", 5);
-  client.publish(mqtt_topic, mqtt_value);
-  snprintf(mqtt_topic, 128, "%s/settings/percents", MQTT_ROOT);
-  snprintf(mqtt_value, 20, "%d", 5);
-  client.publish(mqtt_topic, mqtt_value);
-  //
-  for (int i = 0; i < DEVICES_COUNT; i++)
-    for (int j = 0; j < 1; j++) {
-      snprintf(mqtt_topic, 128, "%s/devices/%s/%s", MQTT_ROOT, 
-        device_names[i], device_params[j]);
-      client.publish(mqtt_topic, "0");    
-    }           
-  //
-  for (int i = 0; i < SENSORS_COUNT; i++) 
-    for (int j = 0; j < 4; j++) {
-      snprintf(mqtt_topic, 128, "%s/sensors/%s/%s", MQTT_ROOT, 
-        sensor_names[i], sensor_params[j]);      
-      client.publish(mqtt_topic, "0");   
-    }   
-}
-
-void topicsSubscribe() {
-  for (int i = 0; i < 2; i++) {
-    snprintf(mqtt_topic, 128, "%s/settings/%s", MQTT_ROOT, sensors_settings[i]);
-    client.subscribe(mqtt_topic);
-  }
-  //
-  for (int i = 0; i < DEVICES_COUNT; i++) {
-    snprintf(mqtt_topic, 128, "%s/devices/%s/state", MQTT_ROOT, device_names[i]);
-    client.subscribe(mqtt_topic);
-  }          
-  //
-  for (int i = 0; i < SENSORS_COUNT; i++) {
-    snprintf(mqtt_topic, 128, "%s/sensors/%s/check_alert", MQTT_ROOT, sensor_names[i]);
-    client.subscribe(mqtt_topic);
-    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_value", MQTT_ROOT, sensor_names[i]);
-    client.subscribe(mqtt_topic);    
-  }          
 }
 
 void initWebServer() {  
@@ -295,13 +220,8 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
   //  
-  client.setServer(mqtt_server, mqtt_port);  
-  //    
+  client.setServer(mqtt_server, mqtt_port);
   mqttconnect();
-  topicsInit();  
-  topicsSubscribe();  
-  //
-  client.setCallback(receivedCallback);
   //
   initWebServer();
   server.begin();
@@ -311,10 +231,68 @@ void setup() {
   initSensors();
   initDevicesStates();  
   //
+  publishAll();
+  //
   delay(500);
   Serial.println("Setup!");  
   //
   getCompleteStatus();    
+}
+
+void publishMode() {  
+  snprintf(mqtt_topic, 128, "%s/mode/type", MQTT_ROOT);
+  snprintf(mqtt_value, 20, "%d", current_mode.type);
+  client.publish(mqtt_topic, mqtt_value);
+  snprintf(mqtt_topic, 128, "%s/mode/period", MQTT_ROOT);
+  snprintf(mqtt_value, 20, "%d", current_mode.period);
+  client.publish(mqtt_topic, mqtt_value);
+  snprintf(mqtt_topic, 128, "%s/mode/percents", MQTT_ROOT);
+  snprintf(mqtt_value, 20, "%d", current_mode.percents);
+  client.publish(mqtt_topic, mqtt_value);
+  //
+  Serial.println("Mode has been published!");
+}
+
+void publishSensors() {
+  for (int i = 0; i < SENSORS_COUNT; i++) {
+    psensor = getSensorByType(i + 1);      
+    if (!psensor) continue;
+    //
+    snprintf(mqtt_topic, 128, "%s/sensors/%s/value", MQTT_ROOT, sensor_names[i]);
+    snprintf(mqtt_value, 20, "%d", psensor->value);
+    client.publish(mqtt_topic, mqtt_value);
+    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_check", MQTT_ROOT, sensor_names[i]);
+    snprintf(mqtt_value, 20, "%d", psensor->alert_check);
+    client.publish(mqtt_topic, mqtt_value);
+    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_compare", MQTT_ROOT, sensor_names[i]);
+    snprintf(mqtt_value, 20, "%d", psensor->alert_compare);
+    client.publish(mqtt_topic, mqtt_value);
+    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_value", MQTT_ROOT, sensor_names[i]);
+    snprintf(mqtt_value, 20, "%d", psensor->alert_value);
+    client.publish(mqtt_topic, mqtt_value);
+    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_flag", MQTT_ROOT, sensor_names[i]);
+    snprintf(mqtt_value, 20, "%d", psensor->alert_flag);
+    client.publish(mqtt_topic, mqtt_value);      
+  }     
+  Serial.println("Sensors have been published!");  
+}
+
+void publishDevices() {
+  for (int i = 0; i < DEVICES_COUNT; i++) {
+    pdevice_state = getDeviceStateByType(i + 1);    
+    if (!pdevice_state) continue;
+    //
+    snprintf(mqtt_topic, 128, "%s/devices/%s", MQTT_ROOT, device_names[i]);
+    snprintf(mqtt_value, 20, "%d", pdevice_state->value);
+    client.publish(mqtt_topic, mqtt_value);
+  }
+  Serial.println("Devices have been published!");
+}
+
+void publishAll() {
+  publishMode();
+  publishSensors();
+  publishDevices();
 }
 
 void loop() {  
@@ -338,6 +316,8 @@ void loop() {
       current_mode.type = rx[2];
       current_mode.period = rx[3];
       current_mode.percents = rx[4];
+      //
+      publishMode();
     } else
     //
     if (rx0 == MSG_SENSORS) {
@@ -350,18 +330,9 @@ void loop() {
         psensor->alert_compare = rx[idx + 3];
         psensor->alert_value = rx[idx + 4];
         psensor->alert_flag = rx[idx + 5];
-      }
-      //      
-      for (int i = 0; i < SENSORS_COUNT; i++) {
-        snprintf(mqtt_topic, 128, "%s/sensors/%s/value", MQTT_ROOT, sensor_names[i]);
-        snprintf(mqtt_value, 20, "%d", rx[i * 2 + 3]);
-        client.publish(mqtt_topic, mqtt_value);
-        snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_flag", MQTT_ROOT, sensor_names[i]);
-        snprintf(mqtt_value, 20, "%d", 0);
-        client.publish(mqtt_topic, mqtt_value);
-        delay(100);
       }     
-      Serial.println("Published!");      
+      //
+      publishSensors();
     } else
     //
     if (rx0 == MSG_DEVICES) {
@@ -371,14 +342,14 @@ void loop() {
         if (!pdevice_state) continue;
         pdevice_state->value = rx[idx + 1];
       }
+      //
+      publishDevices();
     }
         
   } 
   //  
-  if (!client.connected()) {
-    mqttconnect();
-    topicsSubscribe();
-  }  
+  if (!client.connected())
+    mqttconnect();     
   //
   client.loop();
   //
