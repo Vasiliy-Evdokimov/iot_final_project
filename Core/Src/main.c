@@ -365,11 +365,10 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  initMode();
   initSensors();
   initDevices();
   initDevicesStates();
-  initMode();
-
 
   HAL_TIM_Base_Start_IT(&htim3);
 
