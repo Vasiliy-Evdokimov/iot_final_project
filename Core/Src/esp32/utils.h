@@ -6,8 +6,8 @@
 #define SENSORS_COUNT 3
 #define DEVICES_COUNT 2 
 
-#define MQTT_CLIENT_ID "Evdokimov_VI_ESP32"
-#define MQTT_ROOT "Evdokimov_VI/bte_final"
+#define MQTT_CLIENT_ID "1863_evi"
+#define MQTT_ROOT "gb_iot/1863_evi"
 
 #define MODE_PERIODIC 1
 #define MODE_IFCHANGED 2

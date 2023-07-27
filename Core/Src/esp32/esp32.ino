@@ -1,5 +1,5 @@
 #include <WiFi.h>
-#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
 #include <WebServer.h>
 
 #include <PubSubClient.h>
@@ -7,14 +7,15 @@
 #include "utils.c"
 #include "auth.h"
 #include "html_page.h"
+#include "certs.h"
 
 #define UART_BAUDRATE 9600
 #define RXD2 16
 #define TXD2 17
 
 WebServer server(80);
-WiFiClient espClient;
-PubSubClient client(espClient);
+WiFiClientSecure wifi_client;
+PubSubClient mqtt_client;
 
 const char* sensor_names[] = {
   "temperature",
@@ -41,14 +42,14 @@ uint8_t rx0, rx1, idx;
 sensor* psensor;
 device_state* pdevice_state;
 
-uint8_t use_mqtt = 0;
+uint8_t use_mqtt = 1;
 
 void print_buffer(uint8_t* aBuf, String aPrefix) {
   for (int i = 0; i < aBuf[1]; i++) 
     Serial.println(aPrefix + "_" + String(i) + "=" + String(aBuf[i]));
 }
 
-void DoUartTransmit() {
+void doUartTransmit() {
   if (!tx[0]) return;
   Serial2.flush();
   Serial2.write(tx, BUFFER_SIZE);
@@ -60,7 +61,7 @@ void getCompleteStatus() {
   tx[1] = 2;
   fillTxCRC(tx);
   //
-  DoUartTransmit();
+  doUartTransmit();
 }
 
 void handleRoot() {  
@@ -128,7 +129,7 @@ void handleSetMode() {
   tx[3] = param;
   fillTxCRC(tx);
   //
-  DoUartTransmit();
+  doUartTransmit();
   //
   Serial.println("modeID=" + String(modeID) + " param=" + String(param));
   server.send(200, "text/plane", 0);
@@ -153,7 +154,7 @@ void handleSetAlerts() {
   //
   print_buffer(tx, "TX");
   //
-  DoUartTransmit();
+  doUartTransmit();
   //
   server.send(200, "text/plane", 0);
 }
@@ -175,7 +176,7 @@ void handleSetDevices() {
   tx[1] = i;
   fillTxCRC(tx);
   //
-  DoUartTransmit();
+  doUartTransmit();
   //
   server.send(200, "text/plane", 0);
 }
@@ -183,14 +184,21 @@ void handleSetDevices() {
 void mqttconnect() {
   if (!use_mqtt) return;
   //
-  while (!client.connected()) {
+  while (!mqtt_client.connected()) {
+    wifi_client.setCACert(rootCA);
+    wifi_client.setCertificate(cert_devices);
+    wifi_client.setPrivateKey(key_devices);
+    //
+    mqtt_client.setClient(wifi_client);
+    mqtt_client.setServer(mqtt_server, mqtt_port);
+    //
     Serial.print("MQTT connecting... ");
     String clientId = MQTT_CLIENT_ID;
-    if (client.connect(clientId.c_str())) {
+    if (mqtt_client.connect(clientId.c_str())) {
       Serial.println("Connected!");
     } else {
       Serial.print("Failed, status code = ");
-      Serial.print(client.state());
+      Serial.print(mqtt_client.state());
       Serial.println(" Try again in 5 seconds...");
       delay(5000);
     }
@@ -223,9 +231,7 @@ void setup() {
   Serial.println("WiFi connected!");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-  //  
-  if (use_mqtt)
-    client.setServer(mqtt_server, mqtt_port);
+  //
   mqttconnect();
   //
   initWebServer();
@@ -234,7 +240,7 @@ void setup() {
   //
   initMode();
   initSensors();
-  initDevicesStates();  
+  initDevicesStates();
   //
   publishAll();
   //
@@ -244,18 +250,18 @@ void setup() {
   getCompleteStatus();    
 }
 
-void publishMode() {  
+void publishMode() {
   if (!use_mqtt) return;
   //  
   snprintf(mqtt_topic, 128, "%s/mode/type", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", current_mode.type);
-  client.publish(mqtt_topic, mqtt_value);
+  mqtt_client.publish(mqtt_topic, mqtt_value);
   snprintf(mqtt_topic, 128, "%s/mode/period", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", current_mode.period);
-  client.publish(mqtt_topic, mqtt_value);
+  mqtt_client.publish(mqtt_topic, mqtt_value);
   snprintf(mqtt_topic, 128, "%s/mode/percents", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", current_mode.percents);
-  client.publish(mqtt_topic, mqtt_value);
+  mqtt_client.publish(mqtt_topic, mqtt_value);
   //
   Serial.println("Mode has been published!");
 }
@@ -269,24 +275,24 @@ void publishSensors() {
     //
     snprintf(mqtt_topic, 128, "%s/sensors/%s/value", MQTT_ROOT, sensor_names[i]);
     snprintf(mqtt_value, 20, "%d", psensor->value);
-    client.publish(mqtt_topic, mqtt_value);
+    mqtt_client.publish(mqtt_topic, mqtt_value);
     snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_check", MQTT_ROOT, sensor_names[i]);
     snprintf(mqtt_value, 20, "%d", psensor->alert_check);
-    client.publish(mqtt_topic, mqtt_value);
+    mqtt_client.publish(mqtt_topic, mqtt_value);
     snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_compare", MQTT_ROOT, sensor_names[i]);
     snprintf(mqtt_value, 20, "%d", psensor->alert_compare);
-    client.publish(mqtt_topic, mqtt_value);
+    mqtt_client.publish(mqtt_topic, mqtt_value);
     snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_value", MQTT_ROOT, sensor_names[i]);
     snprintf(mqtt_value, 20, "%d", psensor->alert_value);
-    client.publish(mqtt_topic, mqtt_value);
+    mqtt_client.publish(mqtt_topic, mqtt_value);
     snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_flag", MQTT_ROOT, sensor_names[i]);
     snprintf(mqtt_value, 20, "%d", psensor->alert_flag);
-    client.publish(mqtt_topic, mqtt_value);      
+    mqtt_client.publish(mqtt_topic, mqtt_value);      
   }     
   Serial.println("Sensors have been published!");  
 }
 
-void publishDevices() {
+void publishDevices() {  
   if (!use_mqtt) return;
   //  
   for (int i = 0; i < DEVICES_COUNT; i++) {
@@ -295,7 +301,7 @@ void publishDevices() {
     //
     snprintf(mqtt_topic, 128, "%s/devices/%s", MQTT_ROOT, device_names[i]);
     snprintf(mqtt_value, 20, "%d", pdevice_state->value);
-    client.publish(mqtt_topic, mqtt_value);
+    mqtt_client.publish(mqtt_topic, mqtt_value);
   }
   Serial.println("Devices have been published!");
 }
@@ -362,11 +368,11 @@ void loop() {
   } 
   //  
   if (use_mqtt)
-    if (!client.connected())
+    if (!mqtt_client.connected())
       mqttconnect();     
   //
   if (use_mqtt)
-    client.loop();
+    mqtt_client.loop();
   //
   server.handleClient();
   delay(1);  
