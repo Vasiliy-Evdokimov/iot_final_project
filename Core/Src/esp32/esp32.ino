@@ -41,6 +41,8 @@ uint8_t rx0, rx1, idx;
 sensor* psensor;
 device_state* pdevice_state;
 
+uint8_t use_mqtt = 0;
+
 void print_buffer(uint8_t* aBuf, String aPrefix) {
   for (int i = 0; i < aBuf[1]; i++) 
     Serial.println(aPrefix + "_" + String(i) + "=" + String(aBuf[i]));
@@ -179,6 +181,8 @@ void handleSetDevices() {
 }
 
 void mqttconnect() {
+  if (!use_mqtt) return;
+  //
   while (!client.connected()) {
     Serial.print("MQTT connecting... ");
     String clientId = MQTT_CLIENT_ID;
@@ -220,7 +224,8 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
   //  
-  client.setServer(mqtt_server, mqtt_port);
+  if (use_mqtt)
+    client.setServer(mqtt_server, mqtt_port);
   mqttconnect();
   //
   initWebServer();
@@ -240,6 +245,8 @@ void setup() {
 }
 
 void publishMode() {  
+  if (!use_mqtt) return;
+  //  
   snprintf(mqtt_topic, 128, "%s/mode/type", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", current_mode.type);
   client.publish(mqtt_topic, mqtt_value);
@@ -254,6 +261,8 @@ void publishMode() {
 }
 
 void publishSensors() {
+  if (!use_mqtt) return;
+  //  
   for (int i = 0; i < SENSORS_COUNT; i++) {
     psensor = getSensorByType(i + 1);      
     if (!psensor) continue;
@@ -278,6 +287,8 @@ void publishSensors() {
 }
 
 void publishDevices() {
+  if (!use_mqtt) return;
+  //  
   for (int i = 0; i < DEVICES_COUNT; i++) {
     pdevice_state = getDeviceStateByType(i + 1);    
     if (!pdevice_state) continue;
@@ -290,6 +301,8 @@ void publishDevices() {
 }
 
 void publishAll() {
+  if (!use_mqtt) return;
+  //    
   publishMode();
   publishSensors();
   publishDevices();
@@ -348,10 +361,12 @@ void loop() {
         
   } 
   //  
-  if (!client.connected())
-    mqttconnect();     
+  if (use_mqtt)
+    if (!client.connected())
+      mqttconnect();     
   //
-  client.loop();
+  if (use_mqtt)
+    client.loop();
   //
   server.handleClient();
   delay(1);  
