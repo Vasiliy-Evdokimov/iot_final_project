@@ -4,6 +4,8 @@
 
 #include <PubSubClient.h>
 
+#include "mqtt_module.h"
+
 #include "utils.c"
 #include "auth.h"
 #include "html_page.h"
@@ -15,7 +17,11 @@
 
 WebServer server(80);
 WiFiClientSecure wifi_client;
+WiFiClientSecure wifi_client_sub;
 PubSubClient mqtt_client;
+PubSubClient mqtt_client_sub;
+
+#define MQTT_SUBSCRIBE_PATH "gb_iot/1863_evi/sub_test"
 
 const char* sensor_names[] = {
   "temperature",
@@ -181,24 +187,55 @@ void handleSetDevices() {
   server.send(200, "text/plane", 0);
 }
 
+void mqtt_callback(char* topic, byte *payload, unsigned int length) {
+    Serial.println("-------new message from broker-----");
+    Serial.print("channel:");
+    Serial.println(topic);
+    Serial.print("data:");  
+    Serial.write(payload, length);
+    Serial.println();
+}
+
 void mqttconnect() {
   if (!use_mqtt) return;
   //
-  while (!mqtt_client.connected()) {
+  while ((!mqtt_client.connected()) || (!mqtt_client_sub.connected())) { // 
     wifi_client.setCACert(rootCA);
     wifi_client.setCertificate(cert_devices);
     wifi_client.setPrivateKey(key_devices);
     //
+    wifi_client_sub.setCACert(rootCA);
+    wifi_client_sub.setCertificate(cert_registries);
+    wifi_client_sub.setPrivateKey(key_registries);
+    //
     mqtt_client.setClient(wifi_client);
     mqtt_client.setServer(mqtt_server, mqtt_port);
     //
-    Serial.print("MQTT connecting... ");
+    mqtt_client_sub.setClient(wifi_client_sub);
+    mqtt_client_sub.setServer(mqtt_server, mqtt_port);
+    //
+    mqtt_client_sub.setCallback(mqtt_callback);        
+    //
     String clientId = MQTT_CLIENT_ID;
+    //
+    Serial.print("MQTT connecting... ");    
     if (mqtt_client.connect(clientId.c_str())) {
-      Serial.println("Connected!");
+      Serial.println("MQTT connected!");
     } else {
       Serial.print("Failed, status code = ");
       Serial.print(mqtt_client.state());
+      Serial.println(" Try again in 5 seconds...");
+      delay(5000);
+    }
+    //
+    Serial.print("MQTT_sub connecting... ");
+    if (mqtt_client_sub.connect(clientId.c_str())) {
+      Serial.println("MQTT_sub connected!");
+      //
+      mqtt_client_sub.subscribe(MQTT_SUBSCRIBE_PATH);    
+    } else {
+      Serial.print("Failed, status code = ");
+      Serial.print(mqtt_client_sub.state());
       Serial.println(" Try again in 5 seconds...");
       delay(5000);
     }
