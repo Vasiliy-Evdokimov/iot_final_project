@@ -4,32 +4,38 @@
 #include "uart_module.hpp"
 #include "mqtt_module.hpp"
 
-void con_print(String s) {
+void con_print(String s) 
+{
   Serial.print(s);
 }
 
-void con_println(String s) {
+void con_println(String s) 
+{
   Serial.println(s);
 }
 
-void uart_init() {
+void uart_init() 
+{
   Serial.begin(115200);
   Serial2.begin(UART_BAUDRATE, SERIAL_8N1, RXD2, TXD2);  
 }
 
-void uart_transmit() {
+void uart_transmit() 
+{
   if (!tx[0]) return;
   //
   Serial2.flush();
   Serial2.write(tx, BUFFER_SIZE);
 }
 
-void print_buffer(uint8_t* aBuf, String aPrefix) {
+void print_buffer(uint8_t* aBuf, String aPrefix) 
+{
   for (int i = 0; i < aBuf[1]; i++) 
     Serial.println(aPrefix + "_" + String(i) + "=" + String(aBuf[i]));
 }
 
-void uart_complete_status() {
+void uart_complete_status() 
+{
   memset(tx, 0, BUFFER_SIZE);
   tx[0] = CMD_GET_STATUS;
   tx[1] = 2;
@@ -38,8 +44,8 @@ void uart_complete_status() {
   uart_transmit();
 }
 
-void uart_handle() {
-
+void uart_handle() 
+{
   uint8_t rx0, rx1, idx;
 
   while (Serial2.available()) {
@@ -93,8 +99,6 @@ void uart_handle() {
       }
       //
       publishDevices();
-    }
-        
+    }        
   } 
-
 }

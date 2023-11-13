@@ -3,8 +3,8 @@
 #include "uart_module.hpp"
 #include "web_module.hpp"
 
-void setup() {
-
+void setup() 
+{
   uart_init();
   //
   wifi_init();
@@ -17,15 +17,13 @@ void setup() {
   con_println("Setup!");
   //
   uart_complete_status();
-
 }
 
-void loop() {
-
+void loop()
+{
   uart_handle();
   mqtt_handle();
   web_handle();  
   //
-  delay(1);
-  
+  delay(1);  
 }

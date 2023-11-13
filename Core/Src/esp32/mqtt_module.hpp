@@ -20,4 +20,6 @@ void mqtt_publish_all();
 
 void mqtt_handle();
 
+bool mqtt_is_connected();
+
 #endif

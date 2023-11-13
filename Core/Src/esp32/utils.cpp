@@ -22,7 +22,8 @@ const char* device_names[] = {
 uint8_t tx[BUFFER_SIZE] = {0};
 uint8_t rx[BUFFER_SIZE] = {0};
 
-uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
+uint8_t getCRC(uint8_t aDataLen, uint8_t *aData)
+{
     uint8_t res = 0;
     for (int i = 0; i < aDataLen; i++)
         res += aData[i];
@@ -30,7 +31,8 @@ uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
     return res;
 }
 
-void initSensors() {
+void initSensors()
+{
 	for (int i = 0; i < SENSORS_COUNT; i++) {
 		sensors[i].id = i;
     sensors[i].type = i + 1;
@@ -44,33 +46,38 @@ void initSensors() {
 	}
 }
 
-void initDevicesStates() {
+void initDevicesStates()
+{
   for (int i = 0; i < DEVICES_COUNT; i++) {
     devices_states[i].type = i + 1;
     devices_states[i].value = 0;
   }
 }
 
-void initMode() {
+void initMode()
+{
   current_mode.type = MODE_PERIODIC;
   current_mode.period = 5;
   current_mode.percents = 5;
 }
 
-void periphery_init() {
+void periphery_init()
+{
   initMode();
   initSensors();
   initDevicesStates();
 }
 
-sensor* getSensorByType(uint8_t aSensorType) {
+sensor* getSensorByType(uint8_t aSensorType)
+{
 	for (int i = 0; i < SENSORS_COUNT; i++)
 		if (sensors[i].type == aSensorType)
 			return &sensors[i];
 	return NULL;
 }
 
-uint8_t checkSensorsAlert() {
+uint8_t checkSensorsAlert()
+{
 	uint8_t result = 0;
   uint8_t cmp, sval, aval;
 	for (int i = 0; i < SENSORS_COUNT; i++) {
@@ -90,7 +97,8 @@ uint8_t checkSensorsAlert() {
 	return result;
 }
 
-uint8_t checkSensorsPercents(uint8_t aPercents) {
+uint8_t checkSensorsPercents(uint8_t aPercents)
+{
   uint8_t result = 0;  
   uint8_t d;
   for (int i = 0; i < SENSORS_COUNT; i++) {
@@ -103,14 +111,16 @@ uint8_t checkSensorsPercents(uint8_t aPercents) {
   return result;
 }
 
-device_state* getDeviceStateByType(uint8_t aDeviceType) {
+device_state* getDeviceStateByType(uint8_t aDeviceType)
+{
   for (int i = 0; i < DEVICES_COUNT; i++)
     if (devices_states[i].type == aDeviceType)
       return &devices_states[i];
   return NULL;
 }
 
-void fillTxCRC(uint8_t *aTx) {
+void fillTxCRC(uint8_t *aTx)
+{
 	uint8_t idx = aTx[1];
 	aTx[idx] = getCRC(idx, aTx);
 }

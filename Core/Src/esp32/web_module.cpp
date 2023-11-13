@@ -8,11 +8,13 @@
 
 WebServer server(80);
 
-void web_handle() {
+void web_handle() 
+{
   server.handleClient();
 }
 
-void wifi_init() {
+void wifi_init() 
+{
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -29,7 +31,8 @@ void wifi_init() {
   Serial.println(WiFi.localIP());  
 }
 
-void web_init() {  
+void web_init() 
+{
   server.on("/", handleRoot);
   server.on("/getStatus", handleGetStatus);
   server.on("/setMode", handleSetMode);
@@ -41,7 +44,8 @@ void web_init() {
   Serial.println("HTTP server started!");  
 }
 
-void handleRoot() {  
+void handleRoot()
+{  
   Serial.println("handleRoot()");
   //
   uart_complete_status();
@@ -49,7 +53,8 @@ void handleRoot() {
   server.send(200, "text/html", main_page);
 }
 
-void handleGetStatus() {
+void handleGetStatus()
+{
   String json = "{"; 
   //  
   json += String("\"mode\": {") + 
@@ -89,7 +94,8 @@ void handleGetStatus() {
   server.send(200, "text/plane", json);
 }
 
-void handleSetMode() {
+void handleSetMode()
+{
   Serial.println("handleSetMode()");
   uint8_t modeID = server.arg("mode").toInt();
   uint8_t param = 0;
@@ -112,7 +118,8 @@ void handleSetMode() {
   server.send(200, "text/plane", 0);
 }
 
-void handleSetAlerts() {
+void handleSetAlerts()
+{
   Serial.println("handleSetAlerts()");    
   //  
   String s;
@@ -136,7 +143,8 @@ void handleSetAlerts() {
   server.send(200, "text/plane", 0);
 }
 
-void handleSetDevices() {
+void handleSetDevices()
+{
   Serial.println("handleSetDevices()");    
   //
   String s, a;

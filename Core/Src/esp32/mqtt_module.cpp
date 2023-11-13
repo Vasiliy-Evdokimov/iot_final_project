@@ -18,11 +18,18 @@ PubSubClient mqtt_client_sub;
 char mqtt_topic[128];
 char mqtt_value[20];
 
-void mqtt_init() {
-  //if (!use_mqtt) return;
+bool use_mqtt = false;
+
+bool mqtt_is_connected()
+{
+  return mqtt_client.connected() && mqtt_client_sub.connected();
+}
+
+void mqtt_init() 
+{  
+  if (!use_mqtt) return;
   //
-  while (!(mqtt_client.connected() && 
-           mqtt_client_sub.connected())) 
+  while (!mqtt_is_connected()) 
   { 
     wifi_client.setCACert(rootCA);
     wifi_client.setCertificate(cert_devices);
@@ -66,16 +73,22 @@ void mqtt_init() {
   }
 }
 
-void mqtt_callback(char* topic, byte *payload, unsigned int length) {  
-    Serial.println("-------new message from broker-----");
-    Serial.print("channel:");
-    Serial.println(topic);
-    Serial.print("data:");  
-    Serial.write(payload, length);
-    Serial.println();  
+void mqtt_callback(char* topic, byte *payload, unsigned int length) 
+{
+  if (!use_mqtt) return;
+  //
+  Serial.println("-------new message from broker-----");
+  Serial.print("channel:");
+  Serial.println(topic);
+  Serial.print("data:");  
+  Serial.write(payload, length);
+  Serial.println();
 }
 
-void publishMode() {
+void publishMode() 
+{
+  if (!use_mqtt) return;
+  //
   snprintf(mqtt_topic, 128, "%s/mode/type", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", current_mode.type);
   mqtt_client.publish(mqtt_topic, mqtt_value);
@@ -89,7 +102,10 @@ void publishMode() {
   Serial.println("Mode has been published!");
 }
 
-void publishSensors() {
+void publishSensors() 
+{
+  if (!use_mqtt) return;
+  //
   sensor* psensor;
   //
   for (int i = 0; i < SENSORS_COUNT; i++) {
@@ -115,7 +131,10 @@ void publishSensors() {
   Serial.println("Sensors have been published!");  
 }
 
-void publishDevices() {  
+void publishDevices()
+{
+  if (!use_mqtt) return;
+  //
   device_state* pdevice_state;
   //
   for (int i = 0; i < DEVICES_COUNT; i++) {
@@ -129,15 +148,20 @@ void publishDevices() {
   Serial.println("Devices have been published!");
 }
 
-void mqtt_publish_all() {  
+void mqtt_publish_all() 
+{
+  if (!use_mqtt) return;
+  //  
   publishMode();
   publishSensors();
   publishDevices();
 }
 
-void mqtt_handle() {
-  if (!(mqtt_client.connected() &&
-        mqtt_client_sub.connected())) 
+void mqtt_handle() 
+{
+  if (!use_mqtt) return;
+  //
+  if (!mqtt_is_connected()) 
   {
     con_println("MQTT not connected!");
     mqtt_init();
