@@ -69,6 +69,9 @@ extern mode current_mode;
 extern const char* sensor_names[];
 extern const char* device_names[];
 
+extern uint8_t tx[];
+extern uint8_t rx[];
+
 #ifdef __cplusplus
 extern "C" {
 #endif

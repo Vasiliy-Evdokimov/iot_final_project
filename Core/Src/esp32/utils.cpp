@@ -19,6 +19,9 @@ const char* device_names[] = {
   "led_blue"
 };
 
+uint8_t tx[BUFFER_SIZE] = {0};
+uint8_t rx[BUFFER_SIZE] = {0};
+
 uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
     uint8_t res = 0;
     for (int i = 0; i < aDataLen; i++)

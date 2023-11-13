@@ -75,13 +75,6 @@ typedef struct {
 	uint16_t pin;
 } device;
 
-extern sensor sensors[SENSORS_COUNT];
-extern device_state devices_states[DEVICES_COUNT];
-extern mode current_mode;
-
-uint8_t tx[BUFFER_SIZE];
-uint8_t rx[BUFFER_SIZE];
-
 DHT_sensor dht11 = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 
 uint8_t fl_btn = 0;

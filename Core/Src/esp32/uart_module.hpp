@@ -7,9 +7,6 @@
 #define RXD2 16
 #define TXD2 17
 
-extern uint8_t tx[];
-extern uint8_t rx[];
-
 void uart_init();
 
 void uart_transmit();

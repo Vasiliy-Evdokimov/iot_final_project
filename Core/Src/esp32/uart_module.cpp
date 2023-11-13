@@ -4,9 +4,6 @@
 #include "uart_module.hpp"
 #include "mqtt_module.hpp"
 
-uint8_t tx[BUFFER_SIZE] = {0};
-uint8_t rx[BUFFER_SIZE] = {0};
-
 void con_print(String s) {
   Serial.print(s);
 }
