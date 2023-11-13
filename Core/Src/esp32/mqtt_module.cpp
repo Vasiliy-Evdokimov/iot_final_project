@@ -4,6 +4,7 @@
 #include "auth.hpp"
 #include "certs.hpp"
 #include "utils.hpp"
+#include "uart_module.hpp"
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -141,8 +142,11 @@ void mqtt_publish_all() {
 
 void mqtt_handle() {
   if (!(mqtt_client.connected() &&
-        mqtt_client_sub.connected()))
+        mqtt_client_sub.connected())) 
+  {
+    con_println("MQTT not connected!");
     mqtt_init();
+  }    
   //
   mqtt_client.loop();
   mqtt_client_sub.loop();

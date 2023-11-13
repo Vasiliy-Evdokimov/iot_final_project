@@ -24,7 +24,7 @@
 
 #include "APDS9930.h"
 #include "DHT.h"
-#include "utils.h"
+#include "utils.hpp"
 
 /* USER CODE END Includes */
 
