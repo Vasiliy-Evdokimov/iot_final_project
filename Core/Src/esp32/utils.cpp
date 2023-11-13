@@ -6,7 +6,7 @@
 
 sensor sensors[SENSORS_COUNT];
 device_state devices_states[DEVICES_COUNT];
-mode current_mode; 
+mode current_mode;
 
 const char* sensor_names[] = {
   "temperature",

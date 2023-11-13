@@ -1,19 +1,12 @@
 #include "Arduino.h"
 
-#include "web_module.hpp"
 #include "utils.hpp"
+#include "web_module.hpp"
 #include "uart_module.hpp"
 #include "html_page.hpp"
 #include "auth.hpp"
 
 WebServer server(80);
-
-extern sensor sensors[];
-extern device_state devices_states[];
-extern mode current_mode;
-
-extern const char* sensor_names[];
-extern const char* device_names[];
 
 void web_handle() {
   server.handleClient();

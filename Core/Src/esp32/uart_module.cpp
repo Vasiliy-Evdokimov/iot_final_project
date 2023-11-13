@@ -1,15 +1,11 @@
 #include "Arduino.h"
 
-#include "uart_module.hpp"
 #include "utils.hpp"
+#include "uart_module.hpp"
 #include "mqtt_module.hpp"
 
 uint8_t tx[BUFFER_SIZE] = {0};
 uint8_t rx[BUFFER_SIZE] = {0};
-
-extern sensor sensors[];
-extern device_state devices_states[];
-extern mode current_mode;
 
 void con_print(String s) {
   Serial.print(s);

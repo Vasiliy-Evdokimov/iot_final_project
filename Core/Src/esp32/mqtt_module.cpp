@@ -1,9 +1,9 @@
 #include "Arduino.h"
 
+#include "utils.hpp"
 #include "mqtt_module.hpp"
 #include "auth.hpp"
 #include "certs.hpp"
-#include "utils.hpp"
 #include "uart_module.hpp"
 
 #include <WiFi.h>
@@ -17,11 +17,6 @@ PubSubClient mqtt_client_sub;
 
 char mqtt_topic[128];
 char mqtt_value[20];
-
-extern mode current_mode;
-
-extern const char* sensor_names[];
-extern const char* device_names[];
 
 void mqtt_init() {
   //if (!use_mqtt) return;

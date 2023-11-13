@@ -62,24 +62,39 @@ typedef struct {
   uint8_t percents;
 } mode;
 
-uint8_t getCRC(uint8_t aDataLen, uint8_t *aData);
+extern sensor sensors[];
+extern device_state devices_states[];
+extern mode current_mode; 
 
-void initSensors();
+extern const char* sensor_names[];
+extern const char* device_names[];
 
-void initDevicesStates();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void initMode();
+	uint8_t getCRC(uint8_t aDataLen, uint8_t *aData);
 
-void periphery_init();
+	void initSensors();
 
-sensor* getSensorByType(uint8_t aSensorType);
+	void initDevicesStates();
 
-uint8_t checkSensorsAlert();
+	void initMode();
 
-uint8_t checkSensorsPercents(uint8_t aPercents);
+	void periphery_init();
 
-device_state* getDeviceStateByType(uint8_t aDeviceType);
+	sensor* getSensorByType(uint8_t aSensorType);
 
-void fillTxCRC(uint8_t *aTx);
+	uint8_t checkSensorsAlert();
+
+	uint8_t checkSensorsPercents(uint8_t aPercents);
+
+	device_state* getDeviceStateByType(uint8_t aDeviceType);
+
+	void fillTxCRC(uint8_t *aTx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
