@@ -6,9 +6,6 @@
 #define SENSORS_COUNT 3
 #define DEVICES_COUNT 2 
 
-#define MQTT_CLIENT_ID "1863_evi"
-#define MQTT_ROOT "gb_iot/1863_evi"
-
 #define MODE_PERIODIC 1
 #define MODE_IFCHANGED 2
 #define MODE_BYCOMMAND 3
@@ -72,6 +69,8 @@ void initSensors();
 void initDevicesStates();
 
 void initMode();
+
+void periphery_init();
 
 sensor* getSensorByType(uint8_t aSensorType);
 

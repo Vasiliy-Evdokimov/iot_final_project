@@ -1,8 +1,6 @@
 #ifndef HTML_PAGE_H
 #define HTML_PAGE_H
 
-#include "utils.h"
-
 const char main_page[] PROGMEM = R"=(
 <!DOCTYPE html>
 <html>

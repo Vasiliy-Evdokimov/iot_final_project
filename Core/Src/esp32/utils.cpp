@@ -1,11 +1,22 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "utils.h"
+#include "utils.hpp"
 
 sensor sensors[SENSORS_COUNT];
 device_state devices_states[DEVICES_COUNT];
 mode current_mode; 
+
+const char* sensor_names[] = {
+  "temperature",
+  "humidity",
+  "ambient"
+};
+
+const char* device_names[] = {
+  "led_red",
+  "led_blue"
+};
 
 uint8_t getCRC(uint8_t aDataLen, uint8_t *aData) {
     uint8_t res = 0;
@@ -40,6 +51,12 @@ void initMode() {
   current_mode.type = MODE_PERIODIC;
   current_mode.period = 5;
   current_mode.percents = 5;
+}
+
+void periphery_init() {
+  initMode();
+  initSensors();
+  initDevicesStates();
 }
 
 sensor* getSensorByType(uint8_t aSensorType) {
