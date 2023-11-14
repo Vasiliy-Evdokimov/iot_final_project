@@ -76,7 +76,9 @@ extern uint8_t rx[];
 extern "C" {
 #endif
 
-	uint8_t getCRC(uint8_t aDataLen, uint8_t *aData);
+	uint8_t getCRC(uint8_t aDataLen, uint8_t* aData);
+
+  void fillTxCRC(uint8_t* aTx);
 
 	void initSensors();
 
@@ -92,9 +94,7 @@ extern "C" {
 
 	uint8_t checkSensorsPercents(uint8_t aPercents);
 
-	device_state* getDeviceStateByType(uint8_t aDeviceType);
-
-	void fillTxCRC(uint8_t *aTx);
+	device_state* getDeviceStateByType(uint8_t aDeviceType);	
 
 #ifdef __cplusplus
 }

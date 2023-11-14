@@ -6,6 +6,9 @@
 
 #define MQTT_SUBSCRIBE_PATH "gb_iot/1863_evi/sub_test"
 
+#define MQTT_RECONNECT_SEC 5
+#define MQTT_RECONNECT_CNT 3
+
 void mqtt_init();
 
 void mqtt_callback(char* topic, byte *payload, unsigned int length);

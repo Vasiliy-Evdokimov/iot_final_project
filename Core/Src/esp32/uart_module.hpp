@@ -3,6 +3,7 @@
 
 #include "stdint.h"
 
+#define SERIAL_BAUDRATE 115200
 #define UART_BAUDRATE 9600
 #define RXD2 16
 #define TXD2 17

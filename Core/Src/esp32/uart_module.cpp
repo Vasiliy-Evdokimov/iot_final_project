@@ -4,6 +4,9 @@
 #include "uart_module.hpp"
 #include "mqtt_module.hpp"
 
+int rx_counter = 0;
+int tx_counter = 0;
+
 void con_print(String s) 
 {
   Serial.print(s);
@@ -16,7 +19,7 @@ void con_println(String s)
 
 void uart_init() 
 {
-  Serial.begin(115200);
+  Serial.begin(SERIAL_BAUDRATE);
   Serial2.begin(UART_BAUDRATE, SERIAL_8N1, RXD2, TXD2);  
 }
 
@@ -26,12 +29,15 @@ void uart_transmit()
   //
   Serial2.flush();
   Serial2.write(tx, BUFFER_SIZE);
+  //
+  tx_counter++;
+  con_println("New pack sended (" + String(tx_counter) + ")");
 }
 
 void print_buffer(uint8_t* aBuf, String aPrefix) 
 {
   for (int i = 0; i < aBuf[1]; i++) 
-    Serial.println(aPrefix + "_" + String(i) + "=" + String(aBuf[i]));
+    con_println(aPrefix + "_" + String(i) + "=" + String(aBuf[i]));
 }
 
 void uart_complete_status() 
@@ -56,10 +62,13 @@ void uart_handle()
     uint8_t crc = getCRC(rx1, rx);    
     //
     if (crc != rx[rx1]) {
-      Serial.println("CRC failed!");
+      con_println("CRC failed!");
       //rx0 = 0;
       break;      
     }
+    //
+    rx_counter++;
+    con_println("New pack received (" + String(rx_counter) + ")");
     //
     print_buffer(rx, "RX");
     //

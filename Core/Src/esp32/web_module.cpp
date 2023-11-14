@@ -15,20 +15,20 @@ void web_handle()
 
 void wifi_init() 
 {
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+  con_println("");
+  con_print("Connecting to ");
+  con_println(ssid);
   //
   WiFi.begin(ssid, password); 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    con_print(".");
   }
   //
-  Serial.println("");
-  Serial.println("WiFi connected!");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());  
+  con_println("");
+  con_println("WiFi connected!");
+  con_println("IP address: ");
+  con_println(String(WiFi.localIP()));
 }
 
 void web_init() 
@@ -41,12 +41,12 @@ void web_init()
   //
   server.begin();
   //
-  Serial.println("HTTP server started!");  
+  con_println("HTTP server started!");  
 }
 
 void handleRoot()
 {  
-  Serial.println("handleRoot()");
+  con_println("handleRoot()");
   //
   uart_complete_status();
   //
@@ -89,14 +89,14 @@ void handleGetStatus()
   //
   json += "}";
   //  
-  //Serial.println("json = " + json);
+  //con_println("json = " + json);
   //
   server.send(200, "text/plane", json);
 }
 
 void handleSetMode()
 {
-  Serial.println("handleSetMode()");
+  con_println("handleSetMode()");
   uint8_t modeID = server.arg("mode").toInt();
   uint8_t param = 0;
   //
@@ -114,13 +114,13 @@ void handleSetMode()
   //
   uart_transmit();
   //
-  Serial.println("modeID=" + String(modeID) + " param=" + String(param));
+  con_println("modeID=" + String(modeID) + " param=" + String(param));
   server.send(200, "text/plane", 0);
 }
 
 void handleSetAlerts()
 {
-  Serial.println("handleSetAlerts()");    
+  con_println("handleSetAlerts()");    
   //  
   String s;
   memset(tx, 0, BUFFER_SIZE);
@@ -145,7 +145,7 @@ void handleSetAlerts()
 
 void handleSetDevices()
 {
-  Serial.println("handleSetDevices()");    
+  con_println("handleSetDevices()");    
   //
   String s, a;
   memset(tx, 0, BUFFER_SIZE);
@@ -156,7 +156,7 @@ void handleSetDevices()
     a = server.arg(s);    
     tx[i++] = j + 1;
     tx[i++] = a.toInt();    
-    Serial.println(s + "=" + a);
+    con_println(s + "=" + a);
   }
   tx[1] = i;
   fillTxCRC(tx);

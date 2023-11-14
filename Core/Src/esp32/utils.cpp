@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "crc.hpp"
 #include "utils.hpp"
 
 sensor sensors[SENSORS_COUNT];
@@ -22,13 +23,15 @@ const char* device_names[] = {
 uint8_t tx[BUFFER_SIZE] = {0};
 uint8_t rx[BUFFER_SIZE] = {0};
 
-uint8_t getCRC(uint8_t aDataLen, uint8_t *aData)
+uint8_t getCRC(uint8_t aDataLen, uint8_t* aData)
+{    
+  return crc8(aData, aDataLen);
+}
+
+void fillTxCRC(uint8_t *aTx)
 {
-    uint8_t res = 0;
-    for (int i = 0; i < aDataLen; i++)
-        res += aData[i];
-    res = (uint8_t)(0x100 - res);
-    return res;
+  uint8_t idx = aTx[1];	
+  aTx[idx] = crc8(aTx, idx);
 }
 
 void initSensors()
@@ -117,10 +120,4 @@ device_state* getDeviceStateByType(uint8_t aDeviceType)
     if (devices_states[i].type == aDeviceType)
       return &devices_states[i];
   return NULL;
-}
-
-void fillTxCRC(uint8_t *aTx)
-{
-	uint8_t idx = aTx[1];
-	aTx[idx] = getCRC(idx, aTx);
 }

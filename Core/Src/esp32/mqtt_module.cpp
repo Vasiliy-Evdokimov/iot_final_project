@@ -29,7 +29,8 @@ void mqtt_init()
 {  
   if (!use_mqtt) return;
   //
-  while (!mqtt_is_connected()) 
+  int reconnect = MQTT_RECONNECT_CNT;
+  while (!mqtt_is_connected() || !reconnect--)
   { 
     wifi_client.setCACert(rootCA);
     wifi_client.setCertificate(cert_devices);
@@ -49,27 +50,31 @@ void mqtt_init()
     //
     String clientId = MQTT_CLIENT_ID;
     //
-    Serial.print("MQTT connecting... ");    
+    bool connected = true;    
+    //
+    con_print("MQTT connecting... ");    
     if (mqtt_client.connect(clientId.c_str())) {
-      Serial.println("MQTT connected!");
+      con_println("MQTT connected!");
     } else {
-      Serial.print("Failed, status code = ");
-      Serial.print(mqtt_client.state());
-      Serial.println(" Try again in 5 seconds...");
-      delay(5000);
+      con_print("Failed, status code = ");
+      con_println(String(mqtt_client.state()));
+      connected = false;
     }
     //
-    Serial.print("MQTT_sub connecting... ");
+    con_print("MQTT_sub connecting... ");
     if (mqtt_client_sub.connect(clientId.c_str())) {
-      Serial.println("MQTT_sub connected!");
-      //
+      con_println("MQTT_sub connected!");
       mqtt_client_sub.subscribe(MQTT_SUBSCRIBE_PATH);
     } else {
-      Serial.print("Failed, status code = ");
-      Serial.print(mqtt_client_sub.state());
-      Serial.println(" Try again in 5 seconds...");
-      delay(5000);
+      con_print("Failed, status code = ");
+      con_println(String(mqtt_client_sub.state()));
+      connected = false;
     }
+    //
+    if (!connected && reconnect) {
+      con_println(" Try again in " + String(MQTT_RECONNECT_SEC) + " seconds...");
+      delay(MQTT_RECONNECT_SEC * 1000);
+    }  
   }
 }
 
@@ -77,12 +82,14 @@ void mqtt_callback(char* topic, byte *payload, unsigned int length)
 {
   if (!use_mqtt) return;
   //
-  Serial.println("-------new message from broker-----");
-  Serial.print("channel:");
-  Serial.println(topic);
-  Serial.print("data:");  
+  con_println("-------new message from broker-----");
+  con_print("channel:");
+  con_println(topic);
+  con_print("data:");
+  //  
   Serial.write(payload, length);
-  Serial.println();
+  //
+  con_println("");
 }
 
 void publishMode() 
@@ -99,7 +106,7 @@ void publishMode()
   snprintf(mqtt_value, 20, "%d", current_mode.percents);
   mqtt_client.publish(mqtt_topic, mqtt_value);
   //
-  Serial.println("Mode has been published!");
+  con_println("Mode has been published!");
 }
 
 void publishSensors() 
@@ -128,7 +135,7 @@ void publishSensors()
     snprintf(mqtt_value, 20, "%d", psensor->alert_flag);
     mqtt_client.publish(mqtt_topic, mqtt_value);      
   }     
-  Serial.println("Sensors have been published!");  
+  con_println("Sensors have been published!");  
 }
 
 void publishDevices()
@@ -145,7 +152,7 @@ void publishDevices()
     snprintf(mqtt_value, 20, "%d", pdevice_state->value);
     mqtt_client.publish(mqtt_topic, mqtt_value);
   }
-  Serial.println("Devices have been published!");
+  con_println("Devices have been published!");
 }
 
 void mqtt_publish_all() 
