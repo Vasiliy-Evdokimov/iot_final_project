@@ -8,11 +8,13 @@
 #ifndef SRC_STM_FUNCTIONS_H_
 #define SRC_STM_FUNCTIONS_H_
 
-#include "stm32f411xe.h"
+#include "main.h"
 
 void init();
 
 void mainLoop();
+
+void getSensorsData();
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 

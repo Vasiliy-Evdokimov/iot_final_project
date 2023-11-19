@@ -14,7 +14,7 @@
 #define PLC_INPUTS_COUNT 4
 #define PLC_OUTPUTS_COUNT 4
 
-typedef struct PlcStruct
+typedef struct
 {
 	uint8_t index;
 	GPIO_TypeDef* port;

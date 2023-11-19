@@ -9,6 +9,11 @@
 #include "DHT.h"
 
 #include "utils.hpp"
+
+#include "stm_utils.h"
+#include "plc.h"
+#include "rtos_tasks.h"
+
 #include "functions.h"
 
 typedef struct {
@@ -77,10 +82,12 @@ void getSensorsData()
 void doUartReceive()
 {
 	HAL_UART_Receive_IT(&huart1, rx, BUFFER_SIZE);
+	printUartBuffer("RX", rx);
 }
 
 void doUartTransmit()
 {
+	printUartBuffer("TX", tx);
 	HAL_UART_Transmit_IT(&huart1, tx, BUFFER_SIZE);
 }
 
@@ -151,11 +158,11 @@ void sendCompleteStatus()
 {
 	fillTxModeData();
 	doUartTransmit();
-	HAL_Delay(300);
+	osDelay(100);
 	//
 	fillTxSensorData();
 	doUartTransmit();
-	HAL_Delay(300);
+	osDelay(100);
 	//
 	fillTxDevicesData();
 	doUartTransmit();
@@ -252,11 +259,10 @@ void handleUART()
 
 void init()
 {
-	initMode();
-	initSensors();
 	initDevices();
-	initDevicesStates();
-
+	//
+	periphery_init();
+	//
 	HAL_TIM_Base_Start_IT(&htim3);
 
 	FctERR status = APDS9930_Init(0, &hi2c2, APDS9930_ADDR);
@@ -264,14 +270,17 @@ void init()
 		__NOP();
 	}
 
-	doUartReceive();
+	//
 
-	sendCompleteStatus();
+	plc_init();
+
+	tasks_init();
+
+	doUartReceive();
 }
 
 void mainLoop()
 {
-	getSensorsData();
 
 	fl_send_data = 0;
 
@@ -300,7 +309,7 @@ void mainLoop()
 
 	}
 
-	if (current_mode.type  == MODE_IFCHANGED) {
+	if (current_mode.type == MODE_IFCHANGED) {
 
 		fl_send_data = checkSensorsPercents(current_mode.percents);
 

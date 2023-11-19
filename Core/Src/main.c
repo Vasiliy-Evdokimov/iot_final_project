@@ -24,7 +24,6 @@
 /* USER CODE BEGIN Includes */
 
 #include "functions.h"
-#include "plc.h"
 
 /* USER CODE END Includes */
 
@@ -108,8 +107,6 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
-  plc_init();
-
   init();
 
   /* USER CODE END 2 */
@@ -146,11 +143,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  mainLoop();
-
-	  HAL_Delay(100);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

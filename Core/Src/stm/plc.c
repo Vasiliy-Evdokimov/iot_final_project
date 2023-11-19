@@ -5,8 +5,7 @@
  *      Author: Vasilii Evdokimov
  */
 
-#include <stdio.h>
-
+#include "stm_utils.h"
 #include "plc.h"
 
 PlcStruct plc_inputs[PLC_INPUTS_COUNT];
@@ -15,22 +14,6 @@ PlcStruct plc_outputs[PLC_OUTPUTS_COUNT];
 TaskHandle_t xPlcInputsHandlerTask;
 TaskHandle_t xPlcOutputsHandlerTask;
 QueueHandle_t xPlcQueue;
-
-int _write(int file, char *ptr, int len)
-{
-	int i;
-	for(i = 0; i < len; i++)
-		ITM_SendChar((*ptr++));
-	return len;
-}
-
-void printByte(char* prefix, uint8_t value)
-{
-	printf("%s = ", prefix);
-	for (int j = sizeof(value) * 8 - 1; j >= 0; j--)
-		printf("%d", (value >> j) & 1);
-	printf("\n");
-}
 
 void initPlcInputs()
 {
@@ -139,7 +122,7 @@ void vPlcOutputsHahdlerTask(void * pvParameters)
 
 void initPlcTasks()
 {
-	char buf[255];
+	char buf[255] = {0};
 	//
 	xPlcQueue = xQueueCreate( 1, sizeof(uint8_t) );
 	if( xPlcQueue == NULL )

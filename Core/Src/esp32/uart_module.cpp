@@ -39,7 +39,7 @@ void uart_transmit()
 void print_buffer(uint8_t* aBuf, String aPrefix) 
 {
   con_print(aPrefix + ":");
-  for (int i = 0; i < aBuf[1]; i++) 
+  for (int i = 0; i <= aBuf[1]; i++)
     con_print(" [" + String(i) + "]=" + String(aBuf[i]));
   con_println("");
 }

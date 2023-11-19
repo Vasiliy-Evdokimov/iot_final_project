@@ -343,7 +343,7 @@ const char main_page[] PROGMEM = R"=(
     }
 
   </script>
-  <title>V_Evdokimov's ESP32 Final project</title>
+  <title>V_Evdokimov's Final project</title>
 </head>
 <body onload="initElements()">
   <div class="outer">
