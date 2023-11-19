@@ -9,6 +9,9 @@ sensor sensors[SENSORS_COUNT];
 device_state devices_states[DEVICES_COUNT];
 mode current_mode;
 
+PlcMask plc_outputs_masks[PLC_OUTPUTS_COUNT];
+uint8_t plc_inputs_states = 0;
+
 const char* sensor_names[] = {
   "temperature",
   "humidity",

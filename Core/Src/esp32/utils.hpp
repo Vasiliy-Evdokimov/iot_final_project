@@ -4,7 +4,10 @@
 #define BUFFER_SIZE 32
 
 #define SENSORS_COUNT 3
-#define DEVICES_COUNT 2 
+#define DEVICES_COUNT 2
+
+#define PLC_INPUTS_COUNT 4
+#define PLC_OUTPUTS_COUNT 4
 
 #define MODE_PERIODIC 1
 #define MODE_IFCHANGED 2
@@ -29,6 +32,9 @@
 #define CMD_GET_DEVICES 7
 //
 #define CMD_GET_STATUS 8
+//
+#define CMD_GET_PLC_MASKS 9
+#define CMD_SET_PLC_MASKS 10
 
 #define COMPARE_EQUAL 1
 #define COMPARE_LESS 2
@@ -37,6 +43,7 @@
 #define MSG_MODE 1
 #define MSG_SENSORS 2
 #define MSG_DEVICES 3
+#define MSG_PLC_MASKS 4
 
 #define ERR_CRC_FAILED 1
 
@@ -62,9 +69,18 @@ typedef struct {
   uint8_t percents;
 } mode;
 
+typedef struct
+{
+  uint8_t mask;
+  uint8_t all_bits;
+} PlcMask;
+
 extern sensor sensors[];
 extern device_state devices_states[];
 extern mode current_mode; 
+
+extern PlcMask plc_outputs_masks[];
+extern uint8_t plc_inputs_states;
 
 extern const char* sensor_names[];
 extern const char* device_names[];

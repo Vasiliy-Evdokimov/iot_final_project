@@ -28,7 +28,7 @@ void wifi_init()
   con_println("");
   con_println("WiFi connected!");
   con_println("IP address: ");
-  con_println(String(WiFi.localIP()));
+  Serial.println(WiFi.localIP());
 }
 
 void web_init() 

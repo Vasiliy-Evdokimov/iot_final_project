@@ -6,10 +6,11 @@
  */
 
 #include "stm_utils.h"
+#include "utils.hpp"
 #include "plc.h"
 
-PlcStruct plc_inputs[PLC_INPUTS_COUNT];
-PlcStruct plc_outputs[PLC_OUTPUTS_COUNT];
+PlcAddress plc_inputs[PLC_INPUTS_COUNT];
+PlcAddress plc_outputs[PLC_OUTPUTS_COUNT];
 
 TaskHandle_t xPlcInputsHandlerTask;
 TaskHandle_t xPlcOutputsHandlerTask;
@@ -39,27 +40,33 @@ void initPlcOutputs()
 	plc_outputs[0].index = 0;
 	plc_outputs[0].port = PLC_LED_1_GPIO_Port;
 	plc_outputs[0].pin = PLC_LED_1_Pin;
-	plc_outputs[0].all_bits = 1;
 	//
 	plc_outputs[1].index = 1;
 	plc_outputs[1].port = PLC_LED_2_GPIO_Port;
 	plc_outputs[1].pin = PLC_LED_2_Pin;
-	plc_outputs[1].all_bits = 1;
 	//
 	plc_outputs[2].index = 2;
 	plc_outputs[2].port = PLC_LED_3_GPIO_Port;
 	plc_outputs[2].pin = PLC_LED_3_Pin;
-	plc_outputs[2].all_bits = 1;
 	//
 	plc_outputs[3].index = 3;
 	plc_outputs[3].port = PLC_LED_4_GPIO_Port;
 	plc_outputs[3].pin = PLC_LED_4_Pin;
-	plc_outputs[3].all_bits = 0;				// 	при событии любого входа
+}
+
+void initPlcOutputsMasks()
+{
+	plc_outputs_masks[0].mask = 0x9;
+	plc_outputs_masks[0].all_bits = 1;
 	//
-	plc_outputs[0].mask = 0x9;	//	0000 1001	//	при событии 0 и 3 входов
-	plc_outputs[1].mask = 0x1;	//	0000 0001	//	при событии 0 входа
-	plc_outputs[2].mask = 0xC;	//	0000 1100	//	при событии 2 и 3 входов
-	plc_outputs[3].mask = 0xF;	//	0000 1111	// 	при событии любого входа
+	plc_outputs_masks[1].mask = 0x1;
+	plc_outputs_masks[1].all_bits = 1;
+	//
+	plc_outputs_masks[2].mask = 0xC;
+	plc_outputs_masks[2].all_bits = 1;
+	//
+	plc_outputs_masks[3].mask = 0xF;
+	plc_outputs_masks[3].all_bits = 0;
 }
 
 void vPlcInputsHahdlerTask(void * pvParameters)
@@ -91,6 +98,8 @@ void vPlcInputsHahdlerTask(void * pvParameters)
 			xQueueSend(xPlcQueue, &inputs_states, portMAX_DELAY);
 			//
 			inputs_states_p = inputs_states;
+			//
+			plc_inputs_states = inputs_states;
 		}
 		//
 		osDelay(50);
@@ -107,8 +116,9 @@ void vPlcOutputsHahdlerTask(void * pvParameters)
 		{
 			for (int i = 0; i < PLC_OUTPUTS_COUNT; i++)
 			{
-				uint8_t fl1 = (plc_outputs[i].all_bits) && !(plc_outputs[i].mask ^ (inputs_states & plc_outputs[i].mask));
-				uint8_t fl2 = (!plc_outputs[i].all_bits) && (plc_outputs[i].mask | inputs_states) && inputs_states;
+				PlcMask plcm = plc_outputs_masks[i];
+				uint8_t fl1 = (plcm.all_bits) && !(plcm.mask ^ (inputs_states & plcm.mask));
+				uint8_t fl2 = (!plcm.all_bits) && (plcm.mask | inputs_states) && inputs_states;
 				if (fl1 || fl2)
 					HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_SET);
 				else
@@ -165,5 +175,7 @@ void plc_init()
 {
 	initPlcInputs();
 	initPlcOutputs();
+	initPlcOutputsMasks();
+	//
 	initPlcTasks();
 }

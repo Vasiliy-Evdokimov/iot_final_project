@@ -91,6 +91,19 @@ void doUartTransmit()
 	HAL_UART_Transmit_IT(&huart1, tx, BUFFER_SIZE);
 }
 
+void fillTxModeData()
+{
+	memset(tx, 0, BUFFER_SIZE);
+	//
+	tx[0] = MSG_MODE;
+	tx[1] = 5;
+	tx[2] = current_mode.type;
+	tx[3] = current_mode.period;
+	tx[4] = current_mode.percents;
+	//
+	fillTxCRC(tx);
+}
+
 void fillTxSensorData()
 {
 	memset(tx, 0, BUFFER_SIZE);
@@ -117,19 +130,6 @@ void fillTxSensorData()
 	fillTxCRC(tx);
 }
 
-void fillTxModeData()
-{
-	memset(tx, 0, BUFFER_SIZE);
-	//
-	tx[0] = MSG_MODE;
-	tx[1] = 5;
-	tx[2] = current_mode.type;
-	tx[3] = current_mode.period;
-	tx[4] = current_mode.percents;
-	//
-	fillTxCRC(tx);
-}
-
 void fillTxDevicesData()
 {
 	memset(tx, 0, BUFFER_SIZE);
@@ -148,6 +148,26 @@ void fillTxDevicesData()
 	fillTxCRC(tx);
 }
 
+void fillTxPlcMasksData()
+{
+	memset(tx, 0, BUFFER_SIZE);
+
+	tx[0] = MSG_PLC_MASKS;
+
+	uint8_t i = 2;
+
+	tx[i++] = plc_inputs_states;
+
+	for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
+		tx[i++] = plc_outputs_masks[j].mask;
+		tx[i++] = plc_outputs_masks[j].all_bits;
+	}
+
+	tx[1] = i;
+
+	fillTxCRC(tx);
+}
+
 void handleButton()
 {
 	fillTxSensorData();
@@ -156,15 +176,21 @@ void handleButton()
 
 void sendCompleteStatus()
 {
+	const int transmit_delay = 50;
+	//
 	fillTxModeData();
 	doUartTransmit();
-	osDelay(100);
+	osDelay(transmit_delay);
 	//
 	fillTxSensorData();
 	doUartTransmit();
-	osDelay(100);
+	osDelay(transmit_delay);
 	//
 	fillTxDevicesData();
+	doUartTransmit();
+	osDelay(transmit_delay);
+	//
+	fillTxPlcMasksData();
 	doUartTransmit();
 }
 
@@ -281,7 +307,6 @@ void init()
 
 void mainLoop()
 {
-
 	fl_send_data = 0;
 
 	if (fl_btn) {
