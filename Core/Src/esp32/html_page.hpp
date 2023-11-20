@@ -105,6 +105,10 @@ const char main_page[] PROGMEM = R"=(
       width: 140px;
     }
 
+    .device_current_state {
+      font-weight: bold;
+    }
+
     .device_switch {
       position: relative;
       top: 2px;
@@ -247,7 +251,7 @@ const char main_page[] PROGMEM = R"=(
         html +=
           '<tr>' +
             '<td>' + device_name[0].toUpperCase() + device_name.slice(1) + '</td>' +
-            '<td id="' + device_name + '_current_state">?</td>' +
+            '<td id="' + device_name + '_current_state" class="device_current_state">?</td>' +
             '<td>' +
               '<input type="checkbox" class="device_switch" id="' + device_name + '_switch">' +
             '</td>' +
@@ -296,8 +300,10 @@ const char main_page[] PROGMEM = R"=(
       if (status.devices != undefined)
         for (let i = 0; i < status.devices.length; i++) {
           device_name = status.devices[i].name;
-          device_value = (status.devices[i].value == 0) ? "off" : "on";
-          document.getElementById(device_name + "_current_state").innerText = device_value;
+          device_value = (status.devices[i].value == 0) ? "OFF" : "ON";
+          let device_obj = document.getElementById(device_name + "_current_state");
+          device_obj.style.color = (status.devices[i].value == 0) ? "gray" : "green";
+          device_obj.innerText = device_value;
         }
       //
       //
