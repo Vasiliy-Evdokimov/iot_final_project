@@ -104,7 +104,7 @@ void handleGetStatus()
   //
   json += "}";
   //  
-  con_println("json = " + json);
+  //con_println("json = " + json);
   //
   server.send(200, "text/plane", json);
 }
@@ -190,15 +190,13 @@ void handleSetPlcMasks()
   tx[0] = CMD_SET_PLC_MASKS;
   uint8_t i = 2;
   for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
-    s = "plc_output_" + String(j) + "_mask";
-    a = server.arg(s);
-    tx[i++] = j + 1;
+    s = "plc_output_" + String(j + 1) + "_mask";
+    a = server.arg(s);    
     tx[i++] = a.toInt();
     con_println(s + "=" + a);
     //
-    s = "plc_output_" + String(j) + "_all_bits";
-    a = server.arg(s);
-    tx[i++] = j + 1;
+    s = "plc_output_" + String(j + 1) + "_all_bits";
+    a = server.arg(s);    
     tx[i++] = a.toInt();
     con_println(s + "=" + a);
   }

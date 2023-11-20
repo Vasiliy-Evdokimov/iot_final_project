@@ -42,14 +42,14 @@ void initSensors()
 {
 	for (int i = 0; i < SENSORS_COUNT; i++) {
 		sensors[i].id = i;
-    sensors[i].type = i + 1;
+		sensors[i].type = i + 1;
 		sensors[i].value = 0;
-    sensors[i].previous_value = 0;
-    sensors[i].alert_flag = 0;    
-    //
+		sensors[i].previous_value = 0;
+		sensors[i].alert_flag = 0;
+		//
 		sensors[i].alert_check = 0;
 		sensors[i].alert_compare = COMPARE_EQUAL;
-		sensors[i].alert_value = 5;    
+		sensors[i].alert_value = 5;
 	}
 }
 
@@ -86,16 +86,16 @@ sensor* getSensorByType(uint8_t aSensorType)
 uint8_t checkSensorsAlert()
 {
 	uint8_t result = 0;
-  uint8_t cmp, sval, aval;
+	uint8_t cmp, sval, aval;
 	for (int i = 0; i < SENSORS_COUNT; i++) {
     cmp = sensors[i].alert_compare;
     sval = sensors[i].value;
     aval = sensors[i].alert_value;
-		if (sensors[i].alert_check && (    
-        ((cmp == COMPARE_EQUAL) && (sval == aval)) ||
-        ((cmp == COMPARE_LESS) && (sval < aval)) ||
-        ((cmp == COMPARE_GREATER) && (sval > aval))
-		    ))
+	if (sensors[i].alert_check && (
+		((cmp == COMPARE_EQUAL) && (sval == aval)) ||
+		((cmp == COMPARE_LESS) && (sval < aval)) ||
+		((cmp == COMPARE_GREATER) && (sval > aval))
+		))
     {
 			sensors[i].alert_flag = 1;
 			result = 1;

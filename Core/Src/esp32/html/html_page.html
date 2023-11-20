@@ -271,7 +271,7 @@
             '<td colspan="5" class="table_header">PLC MASKS</td>' +
           '</tr>' +
           '<tr class="column_header">' +
-            '<td rowspan="2">Output</td>' +
+            '<td rowspan="2">Outputs</td>' +
             '<td colspan="2">Current</td>' +
             '<td colspan="2">Set new</td>' +
           '</tr>' +
@@ -496,17 +496,24 @@
 
     function setPlcMasks() {      
       var q = "setPlcMasks?";
-      // devices.forEach(function(item, i, arr) {
-      //   let chk = item + "_switch";
-      //   let chk_obj = document.getElementById(chk);
-      //   //
-      //   q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
-      // });
-      // q = q.substring(0, q.length - 1);
-      alert(q);
-      // var xhttp = new XMLHttpRequest();
-      // xhttp.open("GET", q, true);
-      // xhttp.send();
+      for (let i = 0; i < PLC_OUTPUTS_COUNT; i++) {
+        let mask = 0;
+        for (let j = 0; j < PLC_INPUTS_COUNT; j++) {        
+          let plc_output_mask_obj = document.getElementById('plc_output_' + (i + 1) + '_new_mask_' + (j + 1));
+          if (!plc_output_mask_obj) continue;
+          mask |= ((plc_output_mask_obj.checked ? 1 : 0) << j);
+        }
+        q += 'plc_output_' + (i + 1) + '_mask=' + mask + "&";
+        //
+        let plc_output_all_bits_obj = document.getElementById('plc_output_' + (i + 1) + '_new_mask_all_bits');
+        if (!plc_output_all_bits_obj) continue;
+        q += 'plc_output_' + (i + 1) + '_all_bits=' + (plc_output_all_bits_obj.checked ? 1 : 0) + "&";
+      }
+      q = q.substring(0, q.length - 1);
+      //alert(q);
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", q, true);
+      xhttp.send();
     }
     
     function btnClick() {

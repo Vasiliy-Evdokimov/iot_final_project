@@ -279,8 +279,20 @@ void handleUART()
     //
     if (rx0 == CMD_GET_STATUS) {
     	sendCompleteStatus();
-    }
-
+    } else
+    //
+	if (rx0 == CMD_SET_PLC_MASKS) {
+		for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
+			idx = 2 + j * 2;
+			if (!rx[idx]) continue;
+			plc_outputs_masks[j].mask = rx[idx];
+			plc_outputs_masks[j].all_bits = rx[idx + 1];
+		}
+		//
+		fillTxPlcMasksData();
+		fl_transmit = 1;
+	}
+	//
 	if (fl_transmit) doUartTransmit();
 }
 
