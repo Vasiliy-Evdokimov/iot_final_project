@@ -87,8 +87,9 @@ void doUartReceive()
 
 void doUartTransmit()
 {
-	printUartBuffer("TX", tx);
-	HAL_UART_Transmit_IT(&huart1, tx, BUFFER_SIZE);
+	UartBuffer uartBuffer;
+	memcpy(uartBuffer.bytes, tx, BUFFER_SIZE);
+	vAddUartTransmitterTask(uartBuffer);
 }
 
 void fillTxModeData()
@@ -177,19 +178,14 @@ void handleButton()
 
 void sendCompleteStatus()
 {
-	const int transmit_delay = 50;
-	//
 	fillTxModeData();
 	doUartTransmit();
-	osDelay(transmit_delay);
 	//
 	fillTxSensorData();
 	doUartTransmit();
-	osDelay(transmit_delay);
 	//
 	fillTxDevicesData();
 	doUartTransmit();
-	osDelay(transmit_delay);
 	//
 	fillTxPlcMasksData();
 	doUartTransmit();
@@ -289,8 +285,8 @@ void handleUART()
 			plc_outputs_masks[j].all_bits = rx[idx + 1];
 		}
 		//
-		fillTxPlcMasksData();
-		fl_transmit = 1;
+		vApplyPlcMasks(plc_inputs_states);
+		vUpdatePlcData();
 	}
 	//
 	if (fl_transmit) doUartTransmit();
@@ -357,7 +353,6 @@ void mainLoop()
 
 		fillTxSensorData();
 		doUartTransmit();
-		osDelay(50);
 		//
 		fillTxPlcMasksData();
 		doUartTransmit();

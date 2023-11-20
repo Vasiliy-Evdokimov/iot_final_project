@@ -16,6 +16,10 @@ void mainLoop();
 
 void getSensorsData();
 
+void fillTxPlcMasksData();
+
+void doUartTransmit();
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);

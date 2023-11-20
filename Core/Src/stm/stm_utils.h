@@ -11,6 +11,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "utils.hpp"
+
+typedef struct
+{
+	uint8_t bytes[BUFFER_SIZE];
+} UartBuffer;
+
 int _write(int file, char *ptr, int len);
 
 void printByte(char* prefix, uint8_t value);

@@ -18,6 +18,10 @@ typedef struct
 	uint16_t pin;
 } PlcAddress;
 
+void vUpdatePlcData();
+
+void vApplyPlcMasks(uint8_t inputs_states);
+
 void plc_init();
 
 #endif /* SRC_STM_PLC_H_ */

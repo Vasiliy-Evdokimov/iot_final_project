@@ -7,6 +7,7 @@
 
 #include "stm_utils.h"
 #include "utils.hpp"
+#include "functions.h"
 #include "plc.h"
 
 PlcAddress plc_inputs[PLC_INPUTS_COUNT];
@@ -15,6 +16,9 @@ PlcAddress plc_outputs[PLC_OUTPUTS_COUNT];
 TaskHandle_t xPlcInputsHandlerTask;
 TaskHandle_t xPlcOutputsHandlerTask;
 QueueHandle_t xPlcQueue;
+
+TaskHandle_t xPlcDataUpdateTask;
+QueueHandle_t xPlcDataUpdateQueue;
 
 void initPlcInputs()
 {
@@ -114,26 +118,54 @@ void vPlcOutputsHahdlerTask(void * pvParameters)
 	{
 		if (xQueueReceive(xPlcQueue, &inputs_states, portMAX_DELAY))
 		{
-			for (int i = 0; i < PLC_OUTPUTS_COUNT; i++)
-			{
-				PlcMask plcm = plc_outputs_masks[i];
-				uint8_t fl1 = (plcm.all_bits) && !(plcm.mask ^ (inputs_states & plcm.mask));
-				uint8_t fl2 = (!plcm.all_bits) && (plcm.mask | inputs_states) && inputs_states;
-				if (fl1 || fl2) {
-					HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_SET);
-					plc_outputs_states |= (1 << plc_outputs[i].index);
-				}
-				else
-				{
-					HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_RESET);
-					plc_outputs_states &= ~(1 << plc_outputs[i].index);
-				}
-			}
+			vApplyPlcMasks(inputs_states);
+			vUpdatePlcData();
 			printByte("plc_outputs_states", plc_outputs_states);
 		}
 		//
 		osDelay(10);
 	}
+}
+
+void vApplyPlcMasks(uint8_t inputs_states)
+{
+	for (int i = 0; i < PLC_OUTPUTS_COUNT; i++)
+	{
+		PlcMask plcm = plc_outputs_masks[i];
+		uint8_t fl1 = (plcm.all_bits) && !(plcm.mask ^ (inputs_states & plcm.mask));
+		uint8_t fl2 = (!plcm.all_bits) && (plcm.mask | inputs_states) && inputs_states;
+		if (fl1 || fl2) {
+			HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_SET);
+			plc_outputs_states |= (1 << plc_outputs[i].index);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_RESET);
+			plc_outputs_states &= ~(1 << plc_outputs[i].index);
+		}
+	}
+}
+
+void vPlcDataUpdateTask(void * pvParameters)
+{
+	uint8_t flag;
+	//
+	for(;;)
+	{
+		while (xQueueReceive(xPlcDataUpdateQueue, &flag, portMAX_DELAY))
+		{
+			fillTxPlcMasksData();
+			doUartTransmit();
+		}
+		//
+		osDelay(10);
+	}
+}
+
+void vUpdatePlcData()
+{
+	uint8_t flag = 1;
+	xQueueSend(xPlcDataUpdateQueue, &flag, portMAX_DELAY);
 }
 
 void initPlcTasks()
@@ -174,6 +206,28 @@ void initPlcTasks()
 		printf("xPlcOutputsHandlerTask creation failed!\n");
 	} else {
 		printf("xPlcOutputsHandlerTask was successfully created!\n");
+	}
+
+	xPlcDataUpdateQueue = xQueueCreate( 32, sizeof(uint8_t) );
+	if( xPlcDataUpdateQueue == NULL )
+	{
+		printf("xPlcDataUpdate creation failed!\n");
+	} else {
+		printf("xPlcDataUpdate was successfully created!\n");
+	}
+
+	if ( xTaskCreate(
+			vPlcDataUpdateTask,
+			buf,
+			128,
+			NULL,
+			osPriorityNormal,
+			&xPlcDataUpdateTask
+		) != pdPASS )
+	{
+		printf("xPlcDataUpdateTask creation failed!\n");
+	} else {
+		printf("xPlcDataUpdateTask was successfully created!\n");
 	}
 }
 
