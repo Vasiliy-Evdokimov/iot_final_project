@@ -18,7 +18,7 @@
     }
 
     .input_value {
-      width: 50px;
+      width: 30px;
       position: relative;
       top: -2px;
     }
@@ -33,8 +33,8 @@
 
     td {
       padding: 10px;
-      padding-top: 4px;
-      padding-bottom: 4px;
+      padding-top: 3px;
+      padding-bottom: 3px;
       text-align: center;
       vertical-align: middle;
     }
@@ -46,7 +46,7 @@
     }
     
     .alert_compare {
-      width: 50px;
+      width: 40px;
       text-align: center;
       height: 22px;
     }
@@ -101,7 +101,7 @@
       width: 140px;
     }
 
-    .device_current_state {
+    .current_value {
       font-weight: bold;
     }
 
@@ -117,18 +117,12 @@
       background: #d8e6f3;
     }
 
-    /*  ==========  */
+    /*  ==========  */    
 
     .plc_table td {
       text-align: center;
     }
-/*
-    .plc_mask_row td {      
-      padding: 0px;
-      background-color: red;
-      text-align: center;
-    }    
-*/
+
     .plc_outputs_table {
       width: 100%;
     }
@@ -160,6 +154,10 @@
       width: 20px;
       height: 20px;
       background: gray;
+    }
+
+    .plc_mask_check {
+      margin-left: 5px;
     }
 
   </style>
@@ -200,8 +198,8 @@
         html +=
             '<tr>' +
               '<td>' + sensor_name[0].toUpperCase() + sensor_name.slice(1) + '</td>' +
-              '<td id="' + sensor_name + '_current_value">?</td>' +
-              '<td id="' + sensor_name + '_current_alert">?</td>' +
+              '<td id="' + sensor_name + '_current_value" class="current_value">?</td>' +
+              '<td id="' + sensor_name + '_current_alert" class="current_value">?</td>' +
               '<td>' +
                 '<input id="' + sensor_name + '_alert_check" type="checkbox" class="alert_check">' +
                 '<select id="' + sensor_name + '_alert_compare" class="alert_compare" size="1">';
@@ -247,7 +245,7 @@
         html +=
           '<tr>' +
             '<td>' + device_name[0].toUpperCase() + device_name.slice(1) + '</td>' +
-            '<td id="' + device_name + '_current_state" class="device_current_state">?</td>' +
+            '<td id="' + device_name + '_current_state" class="current_value">?</td>' +
             '<td>' +
               '<input type="checkbox" class="device_switch" id="' + device_name + '_switch">' +
             '</td>' +
@@ -263,6 +261,79 @@
           '</table>';
       //
       devices_td.innerHTML = html;
+      //
+      //
+      var plc_td = document.getElementById("plc_td");
+      //
+      html =
+        '<table class="data_table plc_table">' +
+          '<tr>' +
+            '<td colspan="5" class="table_header">PLC MASKS</td>' +
+          '</tr>' +
+          '<tr class="column_header">' +
+            '<td rowspan="2">Output</td>' +
+            '<td colspan="2">Current</td>' +
+            '<td colspan="2">Set new</td>' +
+          '</tr>' +
+          '<tr class="column_header">' +
+            '<td>mask</td>' +
+            '<td>all bits</td>' +
+            '<td>mask</td>' +
+            '<td>all bits</td>' +
+          '</tr>';
+      //
+      for (let i = 0; i < PLC_OUTPUTS_COUNT; i++) {
+        html +=
+          '<tr class="plc_mask_row">' +
+              '<td><table class="plc_outputs_table"><tr> <td>' + (i + 1) + '</td> <td><div id="plc_output_' + (i + 1) + '" class="plc_output_led"></div></td> </tr></table> </td>' +
+              '<td>';
+        for (let j = 0; j < PLC_INPUTS_COUNT; j++)
+          html +=
+            '<input id="plc_output_' + (i + 1) + '_current_mask_' + (j + 1) + '" type="checkbox" class="plc_mask_check" onclick="return false;">';
+        html += '</td>';
+        //
+        html += 
+          '<td>' +
+            '<input id="plc_output_' + (i + 1) + '_current_mask_all_bits" type="checkbox" class="plc_mask_check" onclick="return false;">' +
+          '</td>';
+        //      
+        html += '<td>';
+        for (let j = 0; j < PLC_INPUTS_COUNT; j++)
+          html +=              
+            '<input id="plc_output_' + (i + 1) + '_new_mask_' + (j + 1) + '" type="checkbox" class="plc_mask_check">';
+        html += '</td>';                
+        //    
+        html +=
+          '<td>' +
+            '<input id="plc_output_' + (i + 1) + '_new_mask_all_bits" type="checkbox" class="plc_mask_check">' +
+          '</td>';
+          html += '</tr>';
+      }  
+      //
+      html +=
+        '<tr>' +
+          '<td colspan="5" class="plc_inputs_table_td">' +
+            '<table class="plc_inputs_table">' +
+              '<tr>' +
+                '<td>Current inputs:</td>';
+      for (let j = 0; j < PLC_INPUTS_COUNT; j++)
+        html +=
+          '<td>' + (j + 1) + '</td> <td><div id="plc_input_' + (j + 1) + '" class="plc_input_led"></div></td>';
+      html +=                     
+              '</tr>' +
+            '</table>' +
+          '</td>' +
+        '</tr>';      
+      //
+      html +=
+          '<tr class="table_footer">' +
+            '<td colspan="5">' +
+              '<button onclick="setPlcMasks()">SET MASKS</button>' +
+            '</td>' +
+          '</tr>' +
+        '</table>';
+      //
+      plc_td.innerHTML = html;
     }
 
     function handleStatus(status) {
@@ -478,106 +549,7 @@
         </td></tr>
         <tr><td id="sensors_td"></td></tr>
         <tr><td id="devices_td"></td></tr>
-
-        <tr><td id="plc_td">
-          <table class="data_table plc_table">
-            <tr>
-              <td colspan="5" class="table_header">PLC MASKS</td>
-            </tr>
-            <tr class="column_header">
-              <td rowspan="2">Output</td>
-              <td colspan="2">Current</td>
-              <td colspan="2">Set new</td>
-            </tr>
-            <tr class="column_header">
-              <td>mask</td>
-              <td>all bits</td>
-              <td>mask</td>
-              <td>all bits</td>
-            </tr>
-            
-            <tr class="plc_mask_row">
-              <td><table class="plc_outputs_table"><tr> <td>1</td> <td><div id="plc_output_1" class="plc_output_led"></div></td> </tr></table> </td>
-              <td>
-                <input id="plc_output_1_current_mask_1" type="checkbox" class="plc_mask_check" onclick="return false;">
-                <input id="plc_output_1_current_mask_2" type="checkbox" class="plc_mask_check" onclick="return false;">
-                <input id="plc_output_1_current_mask_3" type="checkbox" class="plc_mask_check" onclick="return false;">
-                <input id="plc_output_1_current_mask_4" type="checkbox" class="plc_mask_check" onclick="return false;">
-              </td>
-              <td>
-                <input id="plc_output_1_current_mask_all_bits" type="checkbox" class="plc_mask_check" onclick="return false;">
-              </td>
-              <td>
-                <input id="plc_output_1_new_mask_1" type="checkbox" class="plc_mask_check">
-                <input id="plc_output_1_new_mask_2" type="checkbox" class="plc_mask_check">
-                <input id="plc_output_1_new_mask_3" type="checkbox" class="plc_mask_check">
-                <input id="plc_output_1_new_mask_4" type="checkbox" class="plc_mask_check">
-              </td>  
-              <td>
-                <input id="plc_output_1_new_mask_all_bits" type="checkbox" class="plc_mask_check">
-              </td>
-            </tr>
-
-            <tr class="plc_mask_row">
-              <td><table class="plc_outputs_table"><tr> <td>2</td> <td><div id="plc_output_2" class="plc_output_led"></div></td> </tr></table> </td>
-              <td>
-                <input id="plc_output_2_current_mask_1" type="checkbox" class="plc_mask_check" onclick="return false;">
-                <input id="plc_output_2_current_mask_2" type="checkbox" class="plc_mask_check" onclick="return false;">
-                <input id="plc_output_2_current_mask_3" type="checkbox" class="plc_mask_check" onclick="return false;">
-                <input id="plc_output_2_current_mask_4" type="checkbox" class="plc_mask_check" onclick="return false;">                
-              </td>
-              <td>
-                <input id="plc_output_2_current_mask_all_bits" type="checkbox" class="plc_mask_check" onclick="return false;">
-              </td>
-              <td>
-                <input id="plc_output_2_new_mask_1" type="checkbox" class="plc_mask_check">
-                <input id="plc_output_2_new_mask_2" type="checkbox" class="plc_mask_check">
-                <input id="plc_output_2_new_mask_3" type="checkbox" class="plc_mask_check">
-                <input id="plc_output_2_new_mask_4" type="checkbox" class="plc_mask_check">
-              </td>
-              <td>
-                <input id="plc_output_2_new_mask_all_bits" type="checkbox" class="plc_mask_check">
-              </td>
-            </tr>
-
-            <tr class="plc_mask_row">
-              <td><table class="plc_outputs_table"><tr> <td>3</td> <td><div id="plc_output_3" class="plc_output_led"></div></td> </tr></table> </td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-
-            <tr class="plc_mask_row">
-              <td><table class="plc_outputs_table"><tr> <td>4</td> <td><div id="plc_output_4" class="plc_output_led"></div></td> </tr></table> </td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-
-            <tr>
-              <td colspan="5" class="plc_inputs_table_td">
-                <table class="plc_inputs_table">
-                  <tr>
-                    <td>Current inputs:</td>            
-                    <td>1</td> <td><div id="plc_input_1" class="plc_input_led"></div></td>
-                    <td>2</td> <td><div id="plc_input_2" class="plc_input_led"></div></td>
-                    <td>3</td> <td><div id="plc_input_3" class="plc_input_led"></div></td>
-                    <td>4</td> <td><div id="plc_input_4" class="plc_input_led"></div></td>
-                  </tr>                  
-                </table>  
-              </td>
-            </tr>
-
-            <tr class="table_footer">
-              <td colspan="5">
-                <button onclick="setPlcMasks()">SET MASKS</button>
-              </td>
-            </tr>
-          </table>
-
-        </td></tr>
+        <tr><td id="plc_td"></td></tr>            
       </table>
       
     </div>
