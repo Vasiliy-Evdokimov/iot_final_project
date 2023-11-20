@@ -11,6 +11,7 @@ mode current_mode;
 
 PlcMask plc_outputs_masks[PLC_OUTPUTS_COUNT];
 uint8_t plc_inputs_states = 0;
+uint8_t plc_outputs_states = 0;
 
 const char* sensor_names[] = {
   "temperature",

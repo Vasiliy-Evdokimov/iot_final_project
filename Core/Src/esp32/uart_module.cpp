@@ -116,12 +116,13 @@ void uart_handle()
     } else
     //
     if (rx0 == MSG_PLC_MASKS) {
-      plc_inputs_states = rx[2];      
+      plc_inputs_states = rx[2];
+      plc_outputs_states = rx[3];
       //
       for (int i = 0; i < PLC_INPUTS_COUNT; i++)
       {
-        plc_outputs_masks[i].mask = rx[3 + i * 2];
-        plc_outputs_masks[i].all_bits = rx[3 + i * 2 + 1];
+        plc_outputs_masks[i].mask = rx[4 + i * 2];
+        plc_outputs_masks[i].all_bits = rx[4 + i * 2 + 1];
       }  
     }
   } 

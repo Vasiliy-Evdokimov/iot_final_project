@@ -15,6 +15,8 @@ void handleSetAlerts();
 
 void handleSetDevices();
 
+void handleSetPlcMasks();
+
 void wifi_init();
 
 void web_init();

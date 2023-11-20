@@ -81,6 +81,7 @@ extern mode current_mode;
 
 extern PlcMask plc_outputs_masks[];
 extern uint8_t plc_inputs_states;
+extern uint8_t plc_outputs_states;
 
 extern const char* sensor_names[];
 extern const char* device_names[];

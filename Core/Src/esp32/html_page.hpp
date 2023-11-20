@@ -13,7 +13,7 @@ const char main_page[] PROGMEM = R"=(
       font-weight: 100;
     }
 
-    .outer { width:100% }
+    .outer { width: 100% }
 
     .inner {
       display: table;
@@ -21,9 +21,9 @@ const char main_page[] PROGMEM = R"=(
       text-align: center;
     }
 
-    .input_value {      
+    .input_value {
       width: 50px;
-      position: relative;      
+      position: relative;
       top: -2px;
     }
 
@@ -32,13 +32,13 @@ const char main_page[] PROGMEM = R"=(
     }
 
     table {
-      border-collapse: collapse; 
+      border-collapse: collapse;
     }
 
-    td {           
-      padding: 10px;      
+    td {
+      padding: 10px;
       padding-top: 4px;
-      padding-bottom: 4px;      
+      padding-bottom: 4px;
       text-align: center;
       vertical-align: middle;
     }
@@ -59,22 +59,22 @@ const char main_page[] PROGMEM = R"=(
       margin: 0;
     }    
 
-    .mode_table td {      
+    .mode_table td {
       text-align: left;
     }
 
-    .mode_table tr:first-child td {      
+    .mode_table tr:first-child td {
       text-align: center;
     }
 
-    .mode_table tr:last-child td {      
+    .mode_table tr:last-child td {
       text-align: center;
     }
     
     .sensors_table td:nth-child(3),
     .sensors_table td:nth-child(4) {
       width: 140px;
-    }    
+    }
 
     .table_header {
       background: #afcde7;
@@ -85,11 +85,11 @@ const char main_page[] PROGMEM = R"=(
       width: 500px;
     }
 
-    .data_table td {      
+    .data_table td {
       border: 1px solid #c0c0c0;
     }
 
-    select {      
+    select {
       position: relative;
       top: -2px;
       margin-left: 6px;
@@ -103,7 +103,7 @@ const char main_page[] PROGMEM = R"=(
     .devices_table td:nth-child(2), 
     .devices_table td:nth-child(3) {
       width: 140px;
-    }    
+    }
 
     .device_switch {
       position: relative;
@@ -115,7 +115,52 @@ const char main_page[] PROGMEM = R"=(
     .column_header,
     .table_footer {
       background: #d8e6f3;
-    }   
+    }
+
+    /*  ==========  */
+
+    .plc_table td {
+      text-align: center;
+    }
+/*
+    .plc_mask_row td {      
+      padding: 0px;
+      background-color: red;
+      text-align: center;
+    }    
+*/
+    .plc_outputs_table {
+      width: 100%;
+    }
+
+    .plc_outputs_table td {
+      padding: 0px;
+      padding-left: 10px;
+      border: 0px solid white;
+    }  
+
+    .plc_inputs_table {
+      width: 100%;
+    }
+
+    .plc_inputs_table td {
+      padding: 0px;
+      padding-left: 15px;      
+      border: 0px solid white;
+    }
+
+    .plc_output_led {
+      width: 20px; 
+      height: 20px;
+      background: gray;
+      border-radius: 50%;
+    }
+
+    .plc_input_led {
+      width: 20px;
+      height: 20px;
+      background: gray;
+    }
 
   </style>
 
@@ -124,16 +169,19 @@ const char main_page[] PROGMEM = R"=(
     setInterval(function() { getStatus(); }, 1000);
     
     var mode_descriptions = ["with a frequency of", "with a change of", "on command"];
-    var sensors = ["temperature", "humidity", "ambient"];    
+    var sensors = ["temperature", "humidity", "ambient"];
     var devices = ["led_red", "led_blue"];
-    var compare = ["=", "<", ">"];
+    var compare = ["=", "<", ">"];    
+
+    var PLC_INPUTS_COUNT = 4;
+    var PLC_OUTPUTS_COUNT = 4;
 
     function initElements() {
       var html = '';
       //
       var sensors_td = document.getElementById("sensors_td");
       //
-      html = 
+      html =
           '<table class="data_table sensors_table">' +
             '<tr>' +
               '<td colspan="4" class="table_header">SENSORS</td>' +
@@ -160,12 +208,12 @@ const char main_page[] PROGMEM = R"=(
         compare.forEach(function(compare_name, compare_id, arr) {
           html += '<option value=' + (compare_id + 1) + '>' + compare_name + '</option>';
         });
-        //                 
-        html +=                
+        //
+        html +=
                 '</select>' +
                 '<input id="' + sensor_name + '_alert_value" type="number" class="input_value" value="5">' +
               '</td>' +
-            '</tr>';  
+            '</tr>';
       });
       //
       html += 
@@ -181,8 +229,8 @@ const char main_page[] PROGMEM = R"=(
       //
       var devices_td = document.getElementById("devices_td");
       //
-      html = 
-        '<table class="data_table devices_table">' + 
+      html =
+        '<table class="data_table devices_table">' +
         '<tr>' +
           '<td colspan="3" class="table_header">DEVICES</td>' +
         '</tr>' +
@@ -196,7 +244,7 @@ const char main_page[] PROGMEM = R"=(
         '</tr>';
 
       devices.forEach(function(device_name, device_id, arr) {
-        html += 
+        html +=
           '<tr>' +
             '<td>' + device_name[0].toUpperCase() + device_name.slice(1) + '</td>' +
             '<td id="' + device_name + '_current_state">?</td>' +
@@ -214,11 +262,11 @@ const char main_page[] PROGMEM = R"=(
             '</tr>' +
           '</table>';
       //
-      devices_td.innerHTML = html;      
+      devices_td.innerHTML = html;
     }
 
-    function handleStatus(status) {      
-      if (status.mode != undefined) {        
+    function handleStatus(status) {
+      if (status.mode != undefined) {
         let mode = mode_descriptions[status.mode.type - 1];
         if (status.mode.type == 1)
           mode += " " + status.mode.period + " seconds";
@@ -230,7 +278,7 @@ const char main_page[] PROGMEM = R"=(
       if (status.sensors != undefined)
         for (let i = 0; i < status.sensors.length; i++) {
           sensor_name = status.sensors[i].name;
-          sensor_value = status.sensors[i].data.value;          
+          sensor_value = status.sensors[i].data.value;
           let sensor_value_obj = document.getElementById(sensor_name + "_current_value");
           sensor_value_obj.innerText = sensor_value;
           sensor_value_obj.style.color = (status.sensors[i].data.alert_flag == 1) ? "red" : "black";
@@ -239,33 +287,68 @@ const char main_page[] PROGMEM = R"=(
           if (status.sensors[i].data.alert_check == 0)
             alert_value = "not checked";
           else
-            alert_value = 
-              compare[status.sensors[i].data.alert_compare - 1] + " " + 
+            alert_value =
+              compare[status.sensors[i].data.alert_compare - 1] + " " +
               status.sensors[i].data.alert_value;
           document.getElementById(sensor_name + "_current_alert").innerText = alert_value;
         }
       //
-      if (status.devices != undefined) 
+      if (status.devices != undefined)
         for (let i = 0; i < status.devices.length; i++) {
           device_name = status.devices[i].name;
           device_value = (status.devices[i].value == 0) ? "off" : "on";
           document.getElementById(device_name + "_current_state").innerText = device_value;
         }
+      //
+      //
+      if (status.plc_outputs_masks != undefined)
+        for (let i = 0; i < status.plc_outputs_masks.length; i++) {
+          index = status.plc_outputs_masks[i].index;
+          mask = status.plc_outputs_masks[i].mask;
+          all_bits = status.plc_outputs_masks[i].all_bits;
+          //
+          for (let j = 0; j < PLC_INPUTS_COUNT; j++) {
+            let mask_obj = document.getElementById("plc_output_" + (index + 1) + "_current_mask_" + (j + 1));
+            if (!mask_obj) continue;
+            mask_obj.checked = ((mask & (1 << j)) > 0);
+          }            
+          let all_bits_obj = document.getElementById("plc_output_" + (index + 1) + "_current_mask_all_bits");
+          if (!all_bits_obj) continue;
+          all_bits_obj.checked = (all_bits > 0);
+        }
+      //
+      if (status.plc_inputs_states != undefined) {
+        let plc_inputs_states = status.plc_inputs_states;
+        for (let i = 0; i < PLC_INPUTS_COUNT; i++) {
+          let plc_input_obj = document.getElementById("plc_input_" + (i + 1));
+          if (!plc_input_obj) continue;
+          plc_input_obj.style.background = ((plc_inputs_states & (1 << i)) > 0) ? "green" : "black";
+        }
+      }
+      //
+      if (status.plc_outputs_states != undefined) {
+        let plc_outputs_states = status.plc_outputs_states;
+        for (let i = 0; i < PLC_OUTPUTS_COUNT; i++) {
+          let plc_output_obj = document.getElementById("plc_output_" + (i + 1));
+          if (!plc_output_obj) continue;
+          plc_output_obj.style.background = ((plc_outputs_states & (1 << i)) > 0) ? "yellow" : "gray";
+        }
+      }
     }
 
-    function getStatus() {     
+    function getStatus() {
       var xhttp = new XMLHttpRequest();
-      xhttp.onreadystatechange = 
+      xhttp.onreadystatechange =
         function() {
-          if (this.readyState == 4 && this.status == 200) {        
+          if (this.readyState == 4 && this.status == 200) {
             console.log(this.responseText);
-            let obj = JSON.parse(this.responseText);          
+            let obj = JSON.parse(this.responseText);
             handleStatus(obj);
           }
         }
       xhttp.open("GET", "getStatus", true);
       xhttp.send();
-    }    
+    }
 
     function setAlerts() {      
       var q = "setAlerts?";
@@ -277,7 +360,7 @@ const char main_page[] PROGMEM = R"=(
         let cmp_obj = document.getElementById(cmp);
         let val_obj = document.getElementById(val);
         //
-        q += 
+        q +=
           chk + "=" + (chk_obj.checked ? 1 : 0) + "&" +
           cmp + "=" + cmp_obj.value + "&" +
           val + "=" + val_obj.value + "&";
@@ -307,15 +390,15 @@ const char main_page[] PROGMEM = R"=(
         case 1: {
           q += "&check_period=" + document.getElementById('check_period').value;
           break;
-        }         
+        }
         case 2: {
           q += "&check_percents=" + document.getElementById('check_percents').value;
           break;
-        }       
+        }
         case 3: {
           document.getElementById('check_button').disabled = false;
           break;
-        }       
+        }
       }
       //alert(q);
       var xhttp = new XMLHttpRequest();
@@ -323,7 +406,7 @@ const char main_page[] PROGMEM = R"=(
       xhttp.send();
     }
 
-    function setDevices() {      
+    function setDevices() {
       var q = "setDevices?";
       devices.forEach(function(item, i, arr) {
         let chk = item + "_switch";
@@ -332,22 +415,37 @@ const char main_page[] PROGMEM = R"=(
         q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
       });
       q = q.substring(0, q.length - 1);
-      //alert(q);      
+      //alert(q);
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
-      xhttp.send();      
+      xhttp.send();
+    }
+
+    function setPlcMasks() {      
+      var q = "setPlcMasks?";
+      // devices.forEach(function(item, i, arr) {
+      //   let chk = item + "_switch";
+      //   let chk_obj = document.getElementById(chk);
+      //   //
+      //   q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
+      // });
+      // q = q.substring(0, q.length - 1);
+      alert(q);
+      // var xhttp = new XMLHttpRequest();
+      // xhttp.open("GET", q, true);
+      // xhttp.send();
     }
     
-    function btnClick() {      
+    function btnClick() {
       console.log("btnClick()");
     }
 
   </script>
-  <title>V_Evdokimov's Final project</title>
+  <title>V_Evdokimov's final project</title>
 </head>
 <body onload="initElements()">
   <div class="outer">
-    <div class="inner">      
+    <div class="inner">
       <table class="outer_table">
         <tr><td>
           <table class="data_table mode_table">
@@ -378,7 +476,108 @@ const char main_page[] PROGMEM = R"=(
         </td></tr>
         <tr><td id="sensors_td"></td></tr>
         <tr><td id="devices_td"></td></tr>
-      </table>      
+
+        <tr><td id="plc_td">
+          <table class="data_table plc_table">
+            <tr>
+              <td colspan="5" class="table_header">PLC MASKS</td>
+            </tr>
+            <tr class="column_header">
+              <td rowspan="2">Output</td>
+              <td colspan="2">Current</td>
+              <td colspan="2">Set new</td>
+            </tr>
+            <tr class="column_header">
+              <td>mask</td>
+              <td>all bits</td>
+              <td>mask</td>
+              <td>all bits</td>
+            </tr>
+            
+            <tr class="plc_mask_row">
+              <td><table class="plc_outputs_table"><tr> <td>1</td> <td><div id="plc_output_1" class="plc_output_led"></div></td> </tr></table> </td>
+              <td>
+                <input id="plc_output_1_current_mask_1" type="checkbox" class="plc_mask_check" onclick="return false;">
+                <input id="plc_output_1_current_mask_2" type="checkbox" class="plc_mask_check" onclick="return false;">
+                <input id="plc_output_1_current_mask_3" type="checkbox" class="plc_mask_check" onclick="return false;">
+                <input id="plc_output_1_current_mask_4" type="checkbox" class="plc_mask_check" onclick="return false;">
+              </td>
+              <td>
+                <input id="plc_output_1_current_mask_all_bits" type="checkbox" class="plc_mask_check" onclick="return false;">
+              </td>
+              <td>
+                <input id="plc_output_1_new_mask_1" type="checkbox" class="plc_mask_check">
+                <input id="plc_output_1_new_mask_2" type="checkbox" class="plc_mask_check">
+                <input id="plc_output_1_new_mask_3" type="checkbox" class="plc_mask_check">
+                <input id="plc_output_1_new_mask_4" type="checkbox" class="plc_mask_check">
+              </td>  
+              <td>
+                <input id="plc_output_1_new_mask_all_bits" type="checkbox" class="plc_mask_check">
+              </td>
+            </tr>
+
+            <tr class="plc_mask_row">
+              <td><table class="plc_outputs_table"><tr> <td>2</td> <td><div id="plc_output_2" class="plc_output_led"></div></td> </tr></table> </td>
+              <td>
+                <input id="plc_output_2_current_mask_1" type="checkbox" class="plc_mask_check" onclick="return false;">
+                <input id="plc_output_2_current_mask_2" type="checkbox" class="plc_mask_check" onclick="return false;">
+                <input id="plc_output_2_current_mask_3" type="checkbox" class="plc_mask_check" onclick="return false;">
+                <input id="plc_output_2_current_mask_4" type="checkbox" class="plc_mask_check" onclick="return false;">                
+              </td>
+              <td>
+                <input id="plc_output_2_current_mask_all_bits" type="checkbox" class="plc_mask_check" onclick="return false;">
+              </td>
+              <td>
+                <input id="plc_output_2_new_mask_1" type="checkbox" class="plc_mask_check">
+                <input id="plc_output_2_new_mask_2" type="checkbox" class="plc_mask_check">
+                <input id="plc_output_2_new_mask_3" type="checkbox" class="plc_mask_check">
+                <input id="plc_output_2_new_mask_4" type="checkbox" class="plc_mask_check">
+              </td>
+              <td>
+                <input id="plc_output_2_new_mask_all_bits" type="checkbox" class="plc_mask_check">
+              </td>
+            </tr>
+
+            <tr class="plc_mask_row">
+              <td><table class="plc_outputs_table"><tr> <td>3</td> <td><div id="plc_output_3" class="plc_output_led"></div></td> </tr></table> </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+
+            <tr class="plc_mask_row">
+              <td><table class="plc_outputs_table"><tr> <td>4</td> <td><div id="plc_output_4" class="plc_output_led"></div></td> </tr></table> </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+
+            <tr>
+              <td colspan="5" class="plc_inputs_table_td">
+                <table class="plc_inputs_table">
+                  <tr>
+                    <td>Current inputs:</td>            
+                    <td>1</td> <td><div id="plc_input_1" class="plc_input_led"></div></td>
+                    <td>2</td> <td><div id="plc_input_2" class="plc_input_led"></div></td>
+                    <td>3</td> <td><div id="plc_input_3" class="plc_input_led"></div></td>
+                    <td>4</td> <td><div id="plc_input_4" class="plc_input_led"></div></td>
+                  </tr>                  
+                </table>  
+              </td>
+            </tr>
+
+            <tr class="table_footer">
+              <td colspan="5">
+                <button onclick="setPlcMasks()">SET MASKS</button>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+      
     </div>
   </div>
 </div>

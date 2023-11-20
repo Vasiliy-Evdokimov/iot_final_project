@@ -38,10 +38,11 @@ void web_init()
   server.on("/setMode", handleSetMode);
   server.on("/setAlerts", handleSetAlerts);
   server.on("/setDevices", handleSetDevices);
+  server.on("/setPlcMasks", handleSetPlcMasks);
   //
   server.begin();
   //
-  con_println("HTTP server started!");  
+  con_println("HTTP server started!");
 }
 
 void handleRoot()
@@ -58,7 +59,7 @@ void handleGetStatus()
   String json = "{"; 
   //  
   json += String("\"mode\": {") + 
-    "\"type\": " + String(current_mode.type) + ", " +  
+    "\"type\": " + String(current_mode.type) + ", " +
     "\"period\": " + String(current_mode.period) + ", " + 
     "\"percent\": " + String(current_mode.percents) +
   "}";  
@@ -70,10 +71,10 @@ void handleGetStatus()
           "\"value\": " + String(sensors[i].value) + ", " +
           "\"alert_check\": " + String(sensors[i].alert_check) + ", " +
           "\"alert_compare\": " + String(sensors[i].alert_compare) +  ", " +
-          "\"alert_value\": " + String(sensors[i].alert_value) +  ", " +          
+          "\"alert_value\": " + String(sensors[i].alert_value) +  ", " +
           "\"alert_flag\": " + String(sensors[i].alert_flag) + 
         "}}";
-      json += (i < SENSORS_COUNT - 1) ? ", " : "";         
+      json += (i < SENSORS_COUNT - 1) ? ", " : "";
   }
   json += "]";
   //  
@@ -87,9 +88,23 @@ void handleGetStatus()
   }  
   json += "]";  
   //
+  json += ", \"plc_outputs_masks\": [";
+  for (int i = 0; i < PLC_OUTPUTS_COUNT; i++) {
+    json += String("{") +
+      "\"index\": " + String(i) +  ", " +
+      "\"mask\": " + String(plc_outputs_masks[i].mask) +  ", " +
+      "\"all_bits\": " + String(plc_outputs_masks[i].all_bits) +
+    "}";
+    json += (i < PLC_OUTPUTS_COUNT - 1) ? ", " : "";
+  }  
+  json += "]";
+  //
+  json += ", \"plc_inputs_states\": " + String(plc_inputs_states);
+  json += ", \"plc_outputs_states\": " + String(plc_outputs_states);
+  //
   json += "}";
   //  
-  //con_println("json = " + json);
+  con_println("json = " + json);
   //
   server.send(200, "text/plane", json);
 }
@@ -120,13 +135,13 @@ void handleSetMode()
 
 void handleSetAlerts()
 {
-  con_println("handleSetAlerts()");    
+  con_println("handleSetAlerts()");
   //  
   String s;
   memset(tx, 0, BUFFER_SIZE);
   tx[0] = CMD_SET_ALERTS;
   uint8_t i = 2;
-  for (int j = 0; j < SENSORS_COUNT; j++) {    
+  for (int j = 0; j < SENSORS_COUNT; j++) {
     s = String(sensor_names[j]);
     tx[i++] = sensors[j].type;
     tx[i++] = server.arg(s + "_alert_check").toInt();
@@ -145,7 +160,7 @@ void handleSetAlerts()
 
 void handleSetDevices()
 {
-  con_println("handleSetDevices()");    
+  con_println("handleSetDevices()");
   //
   String s, a;
   memset(tx, 0, BUFFER_SIZE);
@@ -153,9 +168,38 @@ void handleSetDevices()
   uint8_t i = 2;
   for (int j = 0; j < DEVICES_COUNT; j++) {
     s = String(device_names[j]) + "_switch";
-    a = server.arg(s);    
+    a = server.arg(s);
     tx[i++] = j + 1;
-    tx[i++] = a.toInt();    
+    tx[i++] = a.toInt();
+    con_println(s + "=" + a);
+  }
+  tx[1] = i;
+  fillTxCRC(tx);
+  //
+  uart_transmit();
+  //
+  server.send(200, "text/plane", 0);
+}
+
+void handleSetPlcMasks()
+{
+  con_println("handleSetPlcMasks()");
+  //
+   String s, a;
+  memset(tx, 0, BUFFER_SIZE);
+  tx[0] = CMD_SET_PLC_MASKS;
+  uint8_t i = 2;
+  for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
+    s = "plc_output_" + String(j) + "_mask";
+    a = server.arg(s);
+    tx[i++] = j + 1;
+    tx[i++] = a.toInt();
+    con_println(s + "=" + a);
+    //
+    s = "plc_output_" + String(j) + "_all_bits";
+    a = server.arg(s);
+    tx[i++] = j + 1;
+    tx[i++] = a.toInt();
     con_println(s + "=" + a);
   }
   tx[1] = i;

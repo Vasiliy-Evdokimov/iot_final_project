@@ -157,6 +157,7 @@ void fillTxPlcMasksData()
 	uint8_t i = 2;
 
 	tx[i++] = plc_inputs_states;
+	tx[i++] = plc_outputs_states;
 
 	for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
 		tx[i++] = plc_outputs_masks[j].mask;
@@ -343,6 +344,10 @@ void mainLoop()
 	if (fl_send_data) {
 
 		fillTxSensorData();
+		doUartTransmit();
+		osDelay(50);
+		//
+		fillTxPlcMasksData();
 		doUartTransmit();
 
 	}

@@ -93,13 +93,13 @@ void vPlcInputsHahdlerTask(void * pvParameters)
 		if (inputs_states_p != inputs_states)
 		{
 			printf("inputs_states_changed!\n");
-			printByte("inputs_states", inputs_states);
 			//
 			xQueueSend(xPlcQueue, &inputs_states, portMAX_DELAY);
 			//
 			inputs_states_p = inputs_states;
 			//
 			plc_inputs_states = inputs_states;
+			printByte("plc_inputs_states", plc_inputs_states);
 		}
 		//
 		osDelay(50);
@@ -119,11 +119,17 @@ void vPlcOutputsHahdlerTask(void * pvParameters)
 				PlcMask plcm = plc_outputs_masks[i];
 				uint8_t fl1 = (plcm.all_bits) && !(plcm.mask ^ (inputs_states & plcm.mask));
 				uint8_t fl2 = (!plcm.all_bits) && (plcm.mask | inputs_states) && inputs_states;
-				if (fl1 || fl2)
+				if (fl1 || fl2) {
 					HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_SET);
+					plc_outputs_states |= (1 << plc_outputs[i].index);
+				}
 				else
+				{
 					HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_RESET);
+					plc_outputs_states &= ~(1 << plc_outputs[i].index);
+				}
 			}
+			printByte("plc_outputs_states", plc_outputs_states);
 		}
 		//
 		osDelay(10);
