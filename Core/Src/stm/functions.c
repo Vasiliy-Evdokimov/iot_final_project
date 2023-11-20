@@ -85,31 +85,31 @@ void doUartReceive()
 	printUartBuffer("RX", rx);
 }
 
-void doUartTransmit()
+void doUartTransmit(uint8_t* aTX)
 {
 	UartBuffer uartBuffer;
-	memcpy(uartBuffer.bytes, tx, BUFFER_SIZE);
+	memcpy(uartBuffer.bytes, aTX, BUFFER_SIZE);
 	vAddUartTransmitterTask(uartBuffer);
 }
 
-void fillTxModeData()
+void fillTxModeData(uint8_t* aTX)
 {
-	memset(tx, 0, BUFFER_SIZE);
-	//
-	tx[0] = MSG_MODE;
-	tx[1] = 5;
-	tx[2] = current_mode.type;
-	tx[3] = current_mode.period;
-	tx[4] = current_mode.percents;
-	//
-	fillTxCRC(tx);
+	memset(aTX, 0, BUFFER_SIZE);
+
+	aTX[0] = MSG_MODE;
+	aTX[1] = 5;
+	aTX[2] = current_mode.type;
+	aTX[3] = current_mode.period;
+	aTX[4] = current_mode.percents;
+
+	fillTxCRC(aTX);
 }
 
-void fillTxSensorData()
+void fillTxSensorData(uint8_t* aTX)
 {
-	memset(tx, 0, BUFFER_SIZE);
+	memset(aTX, 0, BUFFER_SIZE);
 
-	tx[0] = MSG_SENSORS;
+	aTX[0] = MSG_SENSORS;
 
 	getSensorsData();
 
@@ -118,82 +118,87 @@ void fillTxSensorData()
 	checkSensorsAlert();
 
 	for (int j = 0; j < SENSORS_COUNT; j++) {
-		tx[i++] = sensors[j].type;
-		tx[i++] = sensors[j].value;
-		tx[i++] = sensors[j].alert_check;
-		tx[i++] = sensors[j].alert_compare;
-		tx[i++] = sensors[j].alert_value;
-		tx[i++] = sensors[j].alert_flag;
+		aTX[i++] = sensors[j].type;
+		aTX[i++] = sensors[j].value;
+		aTX[i++] = sensors[j].alert_check;
+		aTX[i++] = sensors[j].alert_compare;
+		aTX[i++] = sensors[j].alert_value;
+		aTX[i++] = sensors[j].alert_flag;
 	}
 
-	tx[1] = i;
+	aTX[1] = i;
 
-	fillTxCRC(tx);
+	fillTxCRC(aTX);
 }
 
-void fillTxDevicesData()
+void fillTxDevicesData(uint8_t* aTX)
 {
-	memset(tx, 0, BUFFER_SIZE);
+	memset(aTX, 0, BUFFER_SIZE);
 
-	tx[0] = MSG_DEVICES;
+	aTX[0] = MSG_DEVICES;
 
 	uint8_t i = 2;
 
 	for (int j = 0; j < DEVICES_COUNT; j++) {
-		tx[i++] = devices_states[j].type;
-		tx[i++] = devices_states[j].value;
+		aTX[i++] = devices_states[j].type;
+		aTX[i++] = devices_states[j].value;
 	}
 
-	tx[1] = i;
+	aTX[1] = i;
 
-	fillTxCRC(tx);
+	fillTxCRC(aTX);
 }
 
-void fillTxPlcMasksData()
+void fillTxPlcMasksData(uint8_t* aTX)
 {
-	memset(tx, 0, BUFFER_SIZE);
+	memset(aTX, 0, BUFFER_SIZE);
 
-	tx[0] = MSG_PLC_MASKS;
+	aTX[0] = MSG_PLC_MASKS;
 
 	uint8_t i = 2;
 
-	tx[i++] = plc_inputs_states;
-	tx[i++] = plc_outputs_states;
+	aTX[i++] = plc_inputs_states;
+	aTX[i++] = plc_outputs_states;
 
 	for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
-		tx[i++] = plc_outputs_masks[j].mask;
-		tx[i++] = plc_outputs_masks[j].all_bits;
+		aTX[i++] = plc_outputs_masks[j].mask;
+		aTX[i++] = plc_outputs_masks[j].all_bits;
 	}
 
-	tx[1] = i;
+	aTX[1] = i;
 
-	fillTxCRC(tx);
+	fillTxCRC(aTX);
 }
 
 void handleButton()
 {
-	fillTxSensorData();
-	doUartTransmit();
+	uint8_t aTX[BUFFER_SIZE];
+	fillTxSensorData(aTX);
+	doUartTransmit(aTX);
 }
 
 void sendCompleteStatus()
 {
-	fillTxModeData();
-	doUartTransmit();
+	uint8_t aTX[BUFFER_SIZE];
 	//
-	fillTxSensorData();
-	doUartTransmit();
+	fillTxModeData(aTX);
+	doUartTransmit(aTX);
 	//
-	fillTxDevicesData();
-	doUartTransmit();
+	fillTxSensorData(aTX);
+	doUartTransmit(aTX);
 	//
-	fillTxPlcMasksData();
-	doUartTransmit();
+	fillTxDevicesData(aTX);
+	doUartTransmit(aTX);
+	//
+	fillTxPlcMasksData(aTX);
+	doUartTransmit(aTX);
 }
 
 void handleUART()
 {
 	doUartReceive();
+
+	uint8_t aTX[BUFFER_SIZE];
 
 	uint8_t rx0 = rx[0];
 	uint8_t rx1 = rx[1];
@@ -215,7 +220,7 @@ void handleUART()
 	memset(tx, 0, BUFFER_SIZE);
 
 	if (rx0 == CMD_GET_SENSORS) {
-		fillTxSensorData();
+		fillTxSensorData(aTX);
 		fl_transmit = 1;
 	} else
 	//
@@ -226,12 +231,12 @@ void handleUART()
 		if (current_mode.type == MODE_IFCHANGED)
 			current_mode.percents = rx[3];
 		//
-		fillTxModeData();
+		fillTxModeData(aTX);
 		fl_transmit = 1;
 	} else
 	//
 	if (rx0 == CMD_GET_MODE) {
-		fillTxModeData();
+		fillTxModeData(aTX);
 		fl_transmit = 1;
 	}
 	//
@@ -245,7 +250,7 @@ void handleUART()
 			psensor->alert_value = rx[idx + 3];
 		}
 		//
-		fillTxSensorData();
+		fillTxSensorData(aTX);
 		fl_transmit = 1;
 	} else
 	//
@@ -264,12 +269,12 @@ void handleUART()
     			}
     		}
     	//
-    	fillTxDevicesData();
+    	fillTxDevicesData(aTX);
     	fl_transmit = 1;
     } else
     //
     if (rx0 == CMD_GET_DEVICES) {
-    	fillTxDevicesData();
+    	fillTxDevicesData(aTX);
     	fl_transmit = 1;
     } else
     //
@@ -289,7 +294,7 @@ void handleUART()
 		vUpdatePlcData();
 	}
 	//
-	if (fl_transmit) doUartTransmit();
+	if (fl_transmit) doUartTransmit(aTX);
 }
 
 void init()
@@ -351,11 +356,13 @@ void mainLoop()
 
 	if (fl_send_data) {
 
-		fillTxSensorData();
-		doUartTransmit();
+		uint8_t aTX[BUFFER_SIZE];
 		//
-		fillTxPlcMasksData();
-		doUartTransmit();
+		fillTxSensorData(aTX);
+		doUartTransmit(aTX);
+		//
+		fillTxPlcMasksData(aTX);
+		doUartTransmit(aTX);
 
 	}
 }

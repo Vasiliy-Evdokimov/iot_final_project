@@ -16,9 +16,9 @@ void mainLoop();
 
 void getSensorsData();
 
-void fillTxPlcMasksData();
+void fillTxPlcMasksData(uint8_t* aTX);
 
-void doUartTransmit();
+void doUartTransmit(uint8_t* aTX);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 

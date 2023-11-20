@@ -154,8 +154,9 @@ void vPlcDataUpdateTask(void * pvParameters)
 	{
 		while (xQueueReceive(xPlcDataUpdateQueue, &flag, portMAX_DELAY))
 		{
-			fillTxPlcMasksData();
-			doUartTransmit();
+			uint8_t aTX[BUFFER_SIZE];
+			fillTxPlcMasksData(aTX);
+			doUartTransmit(aTX);
 		}
 		//
 		osDelay(10);
