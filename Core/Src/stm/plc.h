@@ -13,7 +13,6 @@
 
 typedef struct
 {
-	uint8_t index;
 	GPIO_TypeDef* port;
 	uint16_t pin;
 } PlcAddress;

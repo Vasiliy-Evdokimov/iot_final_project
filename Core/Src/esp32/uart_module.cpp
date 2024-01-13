@@ -123,7 +123,9 @@ void uart_handle()
       {
         plc_outputs_masks[i].mask = rx[4 + i * 2];
         plc_outputs_masks[i].all_bits = rx[4 + i * 2 + 1];
-      }  
+      }
+      //      
+      publishPLC();
     }
   } 
 }

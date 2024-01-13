@@ -64,7 +64,7 @@ void initDevicesStates()
 void initMode()
 {
   current_mode.type = MODE_PERIODIC;
-  current_mode.period = 5;
+  current_mode.period = 60 * 4;
   current_mode.percents = 5;
 }
 

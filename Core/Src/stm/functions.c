@@ -323,39 +323,35 @@ void mainLoop()
 {
 	fl_send_data = 0;
 
-	if (fl_btn) {
-
+	if (fl_btn)
+	{
 		handleButton();
 		//
 		fl_btn = 0;
-
 	}
 
-	if (fl_uart) {
-
+	if (fl_uart)
+	{
 		handleUART();
 		//
 		fl_uart = 0;
-
 	}
 
 	if ((current_mode.type == MODE_PERIODIC) &&
-	  (periodCount >= current_mode.period)) {
-
+	  (periodCount >= current_mode.period))
+	{
 		fl_send_data = 1;
 		//
 		periodCount = 0;
-
 	}
 
-	if (current_mode.type == MODE_IFCHANGED) {
-
+	if (current_mode.type == MODE_IFCHANGED)
+	{
 		fl_send_data = checkSensorsPercents(current_mode.percents);
-
 	}
 
-	if (fl_send_data) {
-
+	if (fl_send_data)
+	{
 		uint8_t aTX[BUFFER_SIZE];
 		//
 		fillTxSensorData(aTX);
@@ -363,7 +359,6 @@ void mainLoop()
 		//
 		fillTxPlcMasksData(aTX);
 		doUartTransmit(aTX);
-
 	}
 }
 

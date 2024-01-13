@@ -17,6 +17,10 @@ void handleSetDevices();
 
 void handleSetPlcMasks();
 
+void handleDelMqttPath();
+
+void handleAddMqttPath();
+
 void wifi_init();
 
 void web_init();

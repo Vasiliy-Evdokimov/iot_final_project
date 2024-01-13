@@ -22,38 +22,30 @@ QueueHandle_t xPlcDataUpdateQueue;
 
 void initPlcInputs()
 {
-	plc_inputs[0].index = 0;
 	plc_inputs[0].port = BTN_1_GPIO_Port;
 	plc_inputs[0].pin = BTN_1_Pin;
 	//
-	plc_inputs[1].index = 1;
 	plc_inputs[1].port = BTN_2_GPIO_Port;
 	plc_inputs[1].pin = BTN_2_Pin;
 	//
-	plc_inputs[2].index = 2;
 	plc_inputs[2].port = BTN_3_GPIO_Port;
 	plc_inputs[2].pin = BTN_3_Pin;
 	//
-	plc_inputs[3].index = 3;
 	plc_inputs[3].port = BTN_4_GPIO_Port;
 	plc_inputs[3].pin = BTN_4_Pin;
 }
 
 void initPlcOutputs()
 {
-	plc_outputs[0].index = 0;
 	plc_outputs[0].port = PLC_LED_1_GPIO_Port;
 	plc_outputs[0].pin = PLC_LED_1_Pin;
 	//
-	plc_outputs[1].index = 1;
 	plc_outputs[1].port = PLC_LED_2_GPIO_Port;
 	plc_outputs[1].pin = PLC_LED_2_Pin;
 	//
-	plc_outputs[2].index = 2;
 	plc_outputs[2].port = PLC_LED_3_GPIO_Port;
 	plc_outputs[2].pin = PLC_LED_3_Pin;
 	//
-	plc_outputs[3].index = 3;
 	plc_outputs[3].port = PLC_LED_4_GPIO_Port;
 	plc_outputs[3].pin = PLC_LED_4_Pin;
 }
@@ -75,21 +67,20 @@ void initPlcOutputsMasks()
 
 void vPlcInputsHahdlerTask(void * pvParameters)
 {
-	uint8_t	input_statuses[PLC_INPUTS_COUNT];
-	uint8_t	input_statuses_p[PLC_INPUTS_COUNT];
-	uint8_t input_index;
+	uint8_t	input_statuses[PLC_INPUTS_COUNT] = {0};
+	uint8_t	input_statuses_p[PLC_INPUTS_COUNT] = {0};
 	uint8_t inputs_states = 0, inputs_states_p = 0;
 	//
-	for(;;)	{
+	for(;;)
+	{
 		for (int i = 0; i < PLC_INPUTS_COUNT; i++)
 		{
 			input_statuses[i] = HAL_GPIO_ReadPin(plc_inputs[i].port, plc_inputs[i].pin);
-			input_index = plc_inputs[i].index;
 			if (input_statuses[i] == input_statuses_p[i])
 			{
 				if (input_statuses[i])
 				{
-					inputs_states ^= (1 << input_index);
+					inputs_states ^= (1 << i);
 				}
 			} else input_statuses_p[i] = input_statuses[i];
 		}
@@ -106,7 +97,7 @@ void vPlcInputsHahdlerTask(void * pvParameters)
 			printByte("plc_inputs_states", plc_inputs_states);
 		}
 		//
-		osDelay(50);
+		osDelay(60);
 	}
 }
 
@@ -134,14 +125,15 @@ void vApplyPlcMasks(uint8_t inputs_states)
 		PlcMask plcm = plc_outputs_masks[i];
 		uint8_t fl1 = (plcm.all_bits) && !(plcm.mask ^ (inputs_states & plcm.mask));
 		uint8_t fl2 = (!plcm.all_bits) && (plcm.mask | inputs_states) && inputs_states;
-		if (fl1 || fl2) {
+		if (fl1 || fl2)
+		{
 			HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_SET);
-			plc_outputs_states |= (1 << plc_outputs[i].index);
+			plc_outputs_states |= (1 << i);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(plc_outputs[i].port, plc_outputs[i].pin, GPIO_PIN_RESET);
-			plc_outputs_states &= ~(1 << plc_outputs[i].index);
+			plc_outputs_states &= ~(1 << i);
 		}
 	}
 }
@@ -177,7 +169,9 @@ void initPlcTasks()
 	if( xPlcQueue == NULL )
 	{
 		printf("xPlcQueue creation failed!\n");
-	} else {
+	}
+	else
+	{
 		printf("xPlcQueue was successfully created!\n");
 	}
 
@@ -191,7 +185,9 @@ void initPlcTasks()
 		) != pdPASS )
 	{
 		printf("xPlcInputsHahdlerTask creation failed!\n");
-	} else {
+	}
+	else
+	{
 		printf("xPlcInputsHahdlerTask was successfully created!\n");
 	}
 
@@ -205,7 +201,9 @@ void initPlcTasks()
 		) != pdPASS )
 	{
 		printf("xPlcOutputsHandlerTask creation failed!\n");
-	} else {
+	}
+	else
+	{
 		printf("xPlcOutputsHandlerTask was successfully created!\n");
 	}
 
@@ -213,7 +211,9 @@ void initPlcTasks()
 	if( xPlcDataUpdateQueue == NULL )
 	{
 		printf("xPlcDataUpdate creation failed!\n");
-	} else {
+	}
+	else
+	{
 		printf("xPlcDataUpdate was successfully created!\n");
 	}
 
@@ -227,7 +227,9 @@ void initPlcTasks()
 		) != pdPASS )
 	{
 		printf("xPlcDataUpdateTask creation failed!\n");
-	} else {
+	}
+	else
+	{
 		printf("xPlcDataUpdateTask was successfully created!\n");
 	}
 }

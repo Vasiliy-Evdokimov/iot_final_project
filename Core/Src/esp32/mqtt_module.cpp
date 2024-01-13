@@ -19,6 +19,13 @@ char mqtt_topic[128];
 char mqtt_value[20];
 
 bool use_mqtt = false;
+//
+bool publish_modes = false;
+bool publish_alerts = false;
+bool publish_devices = false;
+
+ mqtt_subscribe_topic mqtt_subscribe_topics[MQTT_MAX_SUBSCRIBE_TOPICS];
+ int mqtt_subscribe_topics_count = 0;
 
 bool mqtt_is_connected()
 {
@@ -64,7 +71,8 @@ void mqtt_init()
     con_print("MQTT_sub connecting... ");
     if (mqtt_client_sub.connect(clientId.c_str())) {
       con_println("MQTT_sub connected!");
-      mqtt_client_sub.subscribe(MQTT_SUBSCRIBE_PATH);
+      //
+      mqtt_subscribe_to_topic("gb_iot/1863_evi/plc/inputs");
     } else {
       con_print("Failed, status code = ");
       con_println(String(mqtt_client_sub.state()));
@@ -74,8 +82,26 @@ void mqtt_init()
     if (!connected && reconnect) {
       con_println(" Try again in " + String(MQTT_RECONNECT_SEC) + " seconds...");
       delay(MQTT_RECONNECT_SEC * 1000);
-    }  
+    }
   }
+}
+
+void mqtt_subscribe_to_topic(char* new_path)
+{
+  int index = mqtt_subscribe_topics_count;
+  memset(mqtt_subscribe_topics[index].path, 0, MQTT_MAX_VALUE_LENGTH);
+  memset(mqtt_subscribe_topics[index].value, 0, MQTT_MAX_VALUE_LENGTH);
+  strcpy(mqtt_subscribe_topics[index].path, new_path);
+  mqtt_client_sub.subscribe(mqtt_subscribe_topics[index].path);
+  mqtt_subscribe_topics_count++;
+}
+
+void mqtt_unsubscribe_from_topic(int index) 
+{
+  mqtt_client_sub.unsubscribe(mqtt_subscribe_topics[index].path);
+  memset(mqtt_subscribe_topics[index].path, 0, MQTT_MAX_VALUE_LENGTH);
+  memset(mqtt_subscribe_topics[index].value, 0, MQTT_MAX_VALUE_LENGTH);
+  mqtt_subscribe_topics_count--;
 }
 
 void mqtt_callback(char* topic, byte *payload, unsigned int length) 
@@ -86,6 +112,14 @@ void mqtt_callback(char* topic, byte *payload, unsigned int length)
   con_print("channel:");
   con_println(topic);
   con_print("data:");
+  //
+  for (int i = 0; i < MQTT_MAX_SUBSCRIBE_TOPICS; i++)
+    if (!strcmp(topic, mqtt_subscribe_topics[i].path)) 
+    {       
+      memset(mqtt_subscribe_topics[i].value, 0, MQTT_MAX_VALUE_LENGTH);
+      memcpy(mqtt_subscribe_topics[i].value, payload, length);
+      break;
+    }
   //  
   Serial.write(payload, length);
   //
@@ -95,6 +129,7 @@ void mqtt_callback(char* topic, byte *payload, unsigned int length)
 void publishMode() 
 {
   if (!use_mqtt) return;
+  if (!publish_modes) return;
   //
   snprintf(mqtt_topic, 128, "%s/mode/type", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", current_mode.type);
@@ -122,18 +157,22 @@ void publishSensors()
     snprintf(mqtt_topic, 128, "%s/sensors/%s/value", MQTT_ROOT, sensor_names[i]);
     snprintf(mqtt_value, 20, "%d", psensor->value);
     mqtt_client.publish(mqtt_topic, mqtt_value);
-    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_check", MQTT_ROOT, sensor_names[i]);
-    snprintf(mqtt_value, 20, "%d", psensor->alert_check);
-    mqtt_client.publish(mqtt_topic, mqtt_value);
-    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_compare", MQTT_ROOT, sensor_names[i]);
-    snprintf(mqtt_value, 20, "%d", psensor->alert_compare);
-    mqtt_client.publish(mqtt_topic, mqtt_value);
-    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_value", MQTT_ROOT, sensor_names[i]);
-    snprintf(mqtt_value, 20, "%d", psensor->alert_value);
-    mqtt_client.publish(mqtt_topic, mqtt_value);
-    snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_flag", MQTT_ROOT, sensor_names[i]);
-    snprintf(mqtt_value, 20, "%d", psensor->alert_flag);
-    mqtt_client.publish(mqtt_topic, mqtt_value);      
+    //
+    if (publish_alerts)
+    {
+      snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_check", MQTT_ROOT, sensor_names[i]);
+      snprintf(mqtt_value, 20, "%d", psensor->alert_check);
+      mqtt_client.publish(mqtt_topic, mqtt_value);
+      snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_compare", MQTT_ROOT, sensor_names[i]);
+      snprintf(mqtt_value, 20, "%d", psensor->alert_compare);
+      mqtt_client.publish(mqtt_topic, mqtt_value);
+      snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_value", MQTT_ROOT, sensor_names[i]);
+      snprintf(mqtt_value, 20, "%d", psensor->alert_value);
+      mqtt_client.publish(mqtt_topic, mqtt_value);
+      snprintf(mqtt_topic, 128, "%s/sensors/%s/alert_flag", MQTT_ROOT, sensor_names[i]);
+      snprintf(mqtt_value, 20, "%d", psensor->alert_flag);
+      mqtt_client.publish(mqtt_topic, mqtt_value);
+    }
   }     
   con_println("Sensors have been published!");  
 }
@@ -141,6 +180,7 @@ void publishSensors()
 void publishDevices()
 {
   if (!use_mqtt) return;
+  if (!publish_devices) return;
   //
   device_state* pdevice_state;
   //
@@ -155,6 +195,20 @@ void publishDevices()
   con_println("Devices have been published!");
 }
 
+void publishPLC()
+{
+  if (!use_mqtt) return;
+  //
+  snprintf(mqtt_topic, 128, "%s/plc/inputs", MQTT_ROOT);
+  snprintf(mqtt_value, 20, "%d", plc_inputs_states);
+  mqtt_client.publish(mqtt_topic, mqtt_value);
+  snprintf(mqtt_topic, 128, "%s/plc/outputs", MQTT_ROOT);
+  snprintf(mqtt_value, 20, "%d", plc_outputs_states);
+  mqtt_client.publish(mqtt_topic, mqtt_value);
+  //
+  con_println("PLC states have been published!");
+}
+
 void mqtt_publish_all() 
 {
   if (!use_mqtt) return;
@@ -162,9 +216,10 @@ void mqtt_publish_all()
   publishMode();
   publishSensors();
   publishDevices();
+  publishPLC();
 }
 
-void mqtt_handle() 
+void mqtt_handle()
 {
   if (!use_mqtt) return;
   //

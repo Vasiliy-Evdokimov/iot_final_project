@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "web_module.hpp"
 #include "uart_module.hpp"
+#include "mqtt_module.hpp"
 #include "html_page.hpp"
 #include "auth.hpp"
 
@@ -39,6 +40,8 @@ void web_init()
   server.on("/setAlerts", handleSetAlerts);
   server.on("/setDevices", handleSetDevices);
   server.on("/setPlcMasks", handleSetPlcMasks);
+  server.on("/delMqttPath", handleDelMqttPath);
+  server.on("/addMqttPath", handleAddMqttPath);
   //
   server.begin();
   //
@@ -101,6 +104,18 @@ void handleGetStatus()
   //
   json += ", \"plc_inputs_states\": " + String(plc_inputs_states);
   json += ", \"plc_outputs_states\": " + String(plc_outputs_states);
+  //
+  //
+  json += ", \"mqtt_subscribe_topics\": [";
+  for (int i = 0; i < MQTT_MAX_SUBSCRIBE_TOPICS; i++) {
+    json += String("{") +
+      "\"index\": " + String(i) +  ", " +
+      "\"path\": \"" + String(mqtt_subscribe_topics[i].path) + "\", " + 
+      "\"value\": \"" + String(mqtt_subscribe_topics[i].value) + "\"" + 
+    "}";
+    json += (i < MQTT_MAX_SUBSCRIBE_TOPICS - 1) ? ", " : "";
+  }  
+  json += "]";
   //
   json += "}";
   //  
@@ -185,7 +200,7 @@ void handleSetPlcMasks()
 {
   con_println("handleSetPlcMasks()");
   //
-   String s, a;
+  String s, a;
   memset(tx, 0, BUFFER_SIZE);
   tx[0] = CMD_SET_PLC_MASKS;
   uint8_t i = 2;
@@ -207,3 +222,25 @@ void handleSetPlcMasks()
   //
   server.send(200, "text/plane", 0);
 }
+
+void handleDelMqttPath()
+{
+  con_println("handleDelMqttPath()");
+  //
+  uint8_t path_id = server.arg("path_id").toInt();
+  mqtt_unsubscribe_from_topic(path_id);  
+  //
+  server.send(200, "text/plane", 0);
+}
+
+void handleAddMqttPath() 
+{
+  con_println("handleAddMqttPath()");
+  //
+  char buf[MQTT_MAX_VALUE_LENGTH];
+  server.arg("new_path").toCharArray(buf, MQTT_MAX_VALUE_LENGTH);
+  printf("%s", buf);
+  //
+  server.send(200, "text/plane", 0);
+}
+

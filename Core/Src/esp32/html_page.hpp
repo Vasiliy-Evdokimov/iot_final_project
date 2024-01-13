@@ -9,9 +9,9 @@ const char main_page[] PROGMEM = R"=(
     
     html {
       font-family: Tahoma;
-      font-size: 14pt;
+      font-size: 13pt;
       font-weight: 100;
-    }
+    }    
 
     .outer { width: 100% }
 
@@ -22,7 +22,7 @@ const char main_page[] PROGMEM = R"=(
     }
 
     .input_value {
-      width: 30px;
+      width: 50px;
       position: relative;
       top: -2px;
     }
@@ -46,7 +46,7 @@ const char main_page[] PROGMEM = R"=(
     button {
       width: 150px;
       position: relative;
-      top: -2px;
+      top: -1px;
     }
     
     .alert_compare {
@@ -83,6 +83,7 @@ const char main_page[] PROGMEM = R"=(
 
     .data_table {
       width: 500px;
+      background-color: #e9f3f3;
     }
 
     .data_table td {
@@ -137,38 +138,77 @@ const char main_page[] PROGMEM = R"=(
       border: 0px solid white;
     }  
 
-    .plc_inputs_table {
+    .plc_inputs_table_td table {
+      width: 100%;
+    }
+
+    .plc_inputs_table_td td {
+      padding: 0px;
+      margin: 0px;
+      border: none;
+    }
+
+    .plc_inputs_table {      
       width: 100%;
     }
 
     .plc_inputs_table td {
-      padding: 0px;
-      padding-left: 15px;      
-      border: 0px solid white;
+      width: 12%
     }
 
-    .plc_output_led {
-      width: 20px; 
-      height: 20px;
-      background: gray;
-      border-radius: 50%;
-    }
+    .plc_led_out {
+      position: relative;      
+    }    
 
-    .plc_input_led {
+    .plc_led {
+      position: absolute;
+      top: -9px;
+      left: 0px;
       width: 20px;
       height: 20px;
       background: gray;
     }
 
+    .plc_led_bg {
+      position: absolute;
+      top: -10px;
+      left: 0px;
+      width: 22px;
+      height: 22px;
+      background: black;
+    }
+
+    .plc_output_led {
+      left: -5px;
+      border-radius: 50%;
+    }
+
+    .plc_output_led_bg {
+      left: -6px;
+      border-radius: 50%;
+    }
+
+    .plc_input_led {      
+      left: 6px;
+    }
+
+    .plc_input_led_bg {      
+      left: 5px;
+    }
+
     .plc_mask_check {
       margin-left: 5px;
+    }    
+
+    .plc_inputs_table_title {
+      width: 200px;
     }
 
   </style>
 
   <script>
     
-    setInterval(function() { getStatus(); }, 1000);
+    setInterval(function() { getStatus(); }, 500);
     
     var mode_descriptions = ["with a frequency of", "with a change of", "on command"];
     var sensors = ["temperature", "humidity", "ambient"];
@@ -289,7 +329,19 @@ const char main_page[] PROGMEM = R"=(
       for (let i = 0; i < PLC_OUTPUTS_COUNT; i++) {
         html +=
           '<tr class="plc_mask_row">' +
-              '<td><table class="plc_outputs_table"><tr> <td>' + (i + 1) + '</td> <td><div id="plc_output_' + (i + 1) + '" class="plc_output_led"></div></td> </tr></table> </td>' +
+              '<td>' + 
+                '<table class="plc_outputs_table">' + 
+                  '<tr>' + 
+                    '<td width=50%>' + (i + 1) + '</td>' + 
+                    '<td width=50%>' + 
+                      '<div class="plc_led_out">' +
+                        '<div class="plc_led_bg plc_output_led_bg"></div>' +
+                        '<div id="plc_output_' + (i + 1) + '" class="plc_led plc_output_led"></div>' + 
+                      '</div>' +     
+                    '</td>' + 
+                  '</tr>' + 
+                '</table>' + 
+              '</td>' +
               '<td>';
         for (let j = 0; j < PLC_INPUTS_COUNT; j++)
           html +=
@@ -317,12 +369,26 @@ const char main_page[] PROGMEM = R"=(
       html +=
         '<tr>' +
           '<td colspan="5" class="plc_inputs_table_td">' +
-            '<table class="plc_inputs_table">' +
+            '<table>' +
               '<tr>' +
-                '<td>Current inputs:</td>';
-      for (let j = 0; j < PLC_INPUTS_COUNT; j++)
-        html +=
-          '<td>' + (j + 1) + '</td> <td><div id="plc_input_' + (j + 1) + '" class="plc_input_led"></div></td>';
+                '<td class="plc_inputs_table_title">Current inputs:</td>' + 
+                //
+                '<td>' + 
+                  '<table class="plc_inputs_table">' + 
+                    '<tr>';
+                  for (let j = 0; j < PLC_INPUTS_COUNT; j++)
+                    html +=
+                      '<td>' + (j + 1) + '</td>' + 
+                      '<td>' + 
+                        '<div class="plc_led_out">' +
+                          '<div class="plc_led_bg plc_input_led_bg"></div>' +
+                          '<div id="plc_input_' + (j + 1) + '" class="plc_led plc_input_led"></div>' +
+                        '</div>' +
+                      '</td>';
+            html += '</tr>' + 
+                  '</table>' + 
+                '</td>';
+
       html +=                     
               '</tr>' +
             '</table>' +
@@ -330,12 +396,12 @@ const char main_page[] PROGMEM = R"=(
         '</tr>';      
       //
       html +=
-          '<tr class="table_footer">' +
-            '<td colspan="5">' +
-              '<button onclick="setPlcMasks()">SET MASKS</button>' +
-            '</td>' +
-          '</tr>' +
-        '</table>';
+        '<tr class="table_footer">' +
+          '<td colspan="5">' +
+            '<button onclick="setPlcMasks()">SET MASKS</button>' +
+          '</td>' +
+        '</tr>' +
+      '</table>';
       //
       plc_td.innerHTML = html;
     }
@@ -373,7 +439,7 @@ const char main_page[] PROGMEM = R"=(
           device_name = status.devices[i].name;
           device_value = (status.devices[i].value == 0) ? "OFF" : "ON";
           let device_obj = document.getElementById(device_name + "_current_state");
-          device_obj.style.color = (status.devices[i].value == 0) ? "gray" : "green";
+          device_obj.style.color = (status.devices[i].value == 0) ? "gray" : "limegreen";
           device_obj.innerText = device_value;
         }
       //
@@ -399,7 +465,7 @@ const char main_page[] PROGMEM = R"=(
         for (let i = 0; i < PLC_INPUTS_COUNT; i++) {
           let plc_input_obj = document.getElementById("plc_input_" + (i + 1));
           if (!plc_input_obj) continue;
-          plc_input_obj.style.background = ((plc_inputs_states & (1 << i)) > 0) ? "green" : "black";
+          plc_input_obj.style.background = ((plc_inputs_states & (1 << i)) > 0) ? "lime" : "gray";
         }
       }
       //
@@ -410,6 +476,46 @@ const char main_page[] PROGMEM = R"=(
           if (!plc_output_obj) continue;
           plc_output_obj.style.background = ((plc_outputs_states & (1 << i)) > 0) ? "yellow" : "gray";
         }
+      }
+      //
+      //
+      if (status.mqtt_subscribe_topics != undefined)
+      {
+        var mqtt_td = document.getElementById("mqtt_td");
+        var mst = status.mqtt_subscribe_topics;
+        //
+        html =
+          '<table class="data_table">' +
+          '<tr>' +
+            '<td colspan="3" class="table_header">MQTT SUBSCRIPTIONS</td>' +
+          '</tr>' +
+          '<tr class="column_header">' +
+            '<td>Path</td>' +
+            '<td>Value</td>' +
+            '<td></td>' + 
+          '</tr>';
+        //        
+        for(let i = 0; i < mst.length; i++)
+          if (mst[i].path != "")
+            html +=
+              '<tr id="mqtt_path_' + i + '">' +
+                '<td>' + mst[i].path + '</td>' +
+                '<td>' + mst[i].value + '</td>' +
+                '<td>' + 
+                  '<button onclick="delMqttPath(' + i + ')">DEL</button>' +
+                '</td>' +
+              '</tr>';
+        //
+        html += 
+          '<tr class="table_footer">' +
+            '<td colspan="3">' +
+              '<input type="text" id="new_mqtt_path">' + 
+              '<button onclick="addMqttPath()">ADD</button>' +
+            '</td>' +
+          '</tr>' +        
+        '</table>';
+        //
+        mqtt_td.innerHTML = html;
       }
     }
 
@@ -519,6 +625,21 @@ const char main_page[] PROGMEM = R"=(
       xhttp.open("GET", q, true);
       xhttp.send();
     }
+
+    function delMqttPath(path_id) {      
+      var q = "delMqttPath?path_id=" + path_id;
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", q, true);
+      xhttp.send();
+    }  
+
+    function addMqttPath() {      
+      new_path = document.getElementById('new_mqtt_path').value;
+      var q = "addMqttPath?new_path=" + new_path;
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", q, true);
+      xhttp.send();      
+    }
     
     function btnClick() {
       console.log("btnClick()");
@@ -560,7 +681,8 @@ const char main_page[] PROGMEM = R"=(
         </td></tr>
         <tr><td id="sensors_td"></td></tr>
         <tr><td id="devices_td"></td></tr>
-        <tr><td id="plc_td"></td></tr>            
+        <tr><td id="plc_td"></td></tr>
+        <tr><td id="mqtt_td"></td></tr>
       </table>
       
     </div>
