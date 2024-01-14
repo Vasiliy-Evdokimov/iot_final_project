@@ -21,6 +21,8 @@ void handleDelMqttPath();
 
 void handleAddMqttPath();
 
+void handleSetPublishFlags();
+
 void wifi_init();
 
 void web_init();

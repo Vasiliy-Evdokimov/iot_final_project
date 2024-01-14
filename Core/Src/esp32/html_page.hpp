@@ -76,6 +76,7 @@ const char main_page[] PROGMEM = R"=(
     }
 
     .table_header {
+      position: relative;
       background: #afcde7;
       font-weight: bold;
     }
@@ -255,6 +256,11 @@ const char main_page[] PROGMEM = R"=(
       width: 50px;    
     }
 
+    .publish_check {
+      font-weight: normal;
+      position: absolute;
+    }
+
   </style>
 
   <script>
@@ -264,12 +270,24 @@ const char main_page[] PROGMEM = R"=(
     var mode_descriptions = ["with a frequency of", "with a change of", "on command"];
     var sensors = ["temperature", "humidity", "ambient"];
     var devices = ["led_red", "led_blue"];
-    var compare = ["=", "<", ">"];    
+    var compare = ["=", "<", ">"];
+
+    var publish_check_map = new Map();
+    publish_check_map.set("publish_modes", false);
+    publish_check_map.set("publish_sensors", true);
+    publish_check_map.set("publish_alerts", false);
+    publish_check_map.set("publish_devices", false);
+    publish_check_map.set("publish_plc", true);
+
+    var publish_check_title = "&nbsp;pub";
 
     var PLC_INPUTS_COUNT = 4;
     var PLC_OUTPUTS_COUNT = 4;
 
-    function initElements() {
+    function initElements() 
+    {
+      document.getElementById("modes_publish_check_title").innerHTML = publish_check_title;
+      //
       var html = '';
       //
       var sensors_td = document.getElementById("sensors_td");
@@ -277,12 +295,18 @@ const char main_page[] PROGMEM = R"=(
       html =
           '<table class="data_table sensors_table">' +
             '<tr>' +
-              '<td colspan="4" class="table_header">SENSORS</td>' +
+              '<td colspan="4" class="table_header">' + 
+                '<div class="publish_check"><input id="publish_sensors" type="checkbox" onchange="setPublishFlags()">' + publish_check_title + '</div>' +
+                'SENSORS' + 
+              '</td>' +
             '</tr>' +
             '<tr class="column_header">' +
               '<td rowspan="2">Name</td>' +
               '<td rowspan="2">Value</td>' +
-              '<td colspan="2">Alert conditions</td>' +
+              '<td colspan="2" style="position: relative">' +
+                '<div class="publish_check"><input id="publish_alerts" type="checkbox" onchange="setPublishFlags()">' + publish_check_title + '</div>' +
+                'Alert conditions' + 
+              '</td>' +
             '</tr>' +
             '<tr class="column_header">' +
               '<td>current</td>' +
@@ -325,7 +349,10 @@ const char main_page[] PROGMEM = R"=(
       html =
         '<table class="data_table devices_table">' +
         '<tr>' +
-          '<td colspan="3" class="table_header">DEVICES</td>' +
+          '<td colspan="3" class="table_header">' + 
+            '<div class="publish_check"><input id="publish_devices" type="checkbox" onchange="setPublishFlags()">' + publish_check_title + '</div>' +
+            'DEVICES' + 
+          '</td>' +
         '</tr>' +
         '<tr class="column_header">' +
           '<td rowspan="2">Name</td>' +
@@ -363,7 +390,10 @@ const char main_page[] PROGMEM = R"=(
       html =
         '<table class="data_table plc_table">' +
           '<tr>' +
-            '<td colspan="5" class="table_header">PLC MASKS</td>' +
+            '<td colspan="5" class="table_header">' + 
+              '<div class="publish_check"><input id="publish_plc" type="checkbox" onchange="setPublishFlags()">' + publish_check_title + '</div>' +
+              'PLC MASKS' + 
+            '</td>' +
           '</tr>' +
           '<tr class="column_header">' +
             '<td rowspan="2">Outputs</td>' +
@@ -455,9 +485,14 @@ const char main_page[] PROGMEM = R"=(
       '</table>';
       //
       plc_td.innerHTML = html;
+      //
+      //
+      for (let key of publish_check_map.keys())
+        document.getElementById(key).checked = publish_check_map.get(key);             
     }
 
-    function handleStatus(status) {
+    function handleStatus(status)
+    {
       if (status.mode != undefined) {
         let mode = mode_descriptions[status.mode.type - 1];
         if (status.mode.type == 1)
@@ -552,7 +587,8 @@ const char main_page[] PROGMEM = R"=(
       }
     }
 
-    function getStatus() {
+    function getStatus()
+    {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange =
         function() {
@@ -566,7 +602,8 @@ const char main_page[] PROGMEM = R"=(
       xhttp.send();
     }
 
-    function setAlerts() {      
+    function setAlerts()
+    {      
       var q = "setAlerts?";
       sensors.forEach(function(item, i, arr) {
         let chk = item + "_alert_check";
@@ -582,13 +619,14 @@ const char main_page[] PROGMEM = R"=(
           val + "=" + val_obj.value + "&";
       });
       q = q.substring(0, q.length - 1);
-      //alert(q);
+      //
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
     }
 
-    function setMode() {
+    function setMode()
+    {
       var q = "setMode?mode=";
       var radios = document.getElementsByName('check_mode');
       var value = 0;
@@ -616,13 +654,14 @@ const char main_page[] PROGMEM = R"=(
           break;
         }
       }
-      //alert(q);
+      //
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
     }
 
-    function setDevices() {
+    function setDevices()
+    {
       var q = "setDevices?";
       devices.forEach(function(item, i, arr) {
         let chk = item + "_switch";
@@ -631,13 +670,14 @@ const char main_page[] PROGMEM = R"=(
         q += chk + "=" + (chk_obj.checked ? 1 : 0) + "&";
       });
       q = q.substring(0, q.length - 1);
-      //alert(q);
+      //
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
     }
 
-    function setPlcMasks() {      
+    function setPlcMasks()
+    {      
       var q = "setPlcMasks?";
       for (let i = 0; i < PLC_OUTPUTS_COUNT; i++) {
         let mask = 0;
@@ -652,28 +692,49 @@ const char main_page[] PROGMEM = R"=(
         if (!plc_output_all_bits_obj) continue;
         q += 'plc_output_' + (i + 1) + '_all_bits=' + (plc_output_all_bits_obj.checked ? 1 : 0) + "&";
       }
-      q = q.substring(0, q.length - 1);
-      //alert(q);
+      q = q.substring(0, q.length - 1);      
+      //
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
     }
 
-    function delMqttPath(path_id) {      
+    function delMqttPath(path_id)
+    {      
       var q = "delMqttPath?path_id=" + path_id;
+      //
+      var ask = confirm("Are you sure you want to unsubscribe from the selected topic?");
+      if (!ask) return;
+      //
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
       xhttp.send();
     }  
 
-    function addMqttPath() {      
+    function addMqttPath()
+    {
       var path_input = document.getElementById('new_mqtt_path'); 
       var new_path = path_input.value;
       var q = "addMqttPath?new_path=" + new_path;
+      path_input.value = "";
+      //
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
-      xhttp.send();     
-      path_input.value = ""; 
+      xhttp.send();      
+    }
+
+    function setPublishFlags() 
+    {
+      var q = "setPublishFlags?";
+      for (let key of publish_check_map.keys()) {
+        let chk_obj = document.getElementById(key);
+        q += key + "=" + (chk_obj.checked ? 1 : 0) + "&";        
+      }
+      q = q.substring(0, q.length - 1);
+      //  alert(q);
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("GET", q, true);
+      xhttp.send();
     }
     
     function btnClick() {
@@ -695,7 +756,10 @@ const char main_page[] PROGMEM = R"=(
                 <td class="data_td">
                   <table class="data_table mode_table">
                     <tr>
-                      <td colspan="2" class="table_header">CHECK MODE</td>
+                      <td colspan="2" class="table_header">
+                        <div class="publish_check"><input id="publish_modes" type="checkbox" onchange="setPublishFlags()"><span id="modes_publish_check_title"></span></div>
+                        CHECK MODE
+                      </td>
                     </tr>
                     <tr class="data_row">
                       <td colspan="2">current:&nbsp;<span id="current_mode">?</span></td>

@@ -17,6 +17,12 @@ struct mqtt_subscribe_topic {
 
 extern mqtt_subscribe_topic mqtt_subscribe_topics[MQTT_MAX_SUBSCRIBE_TOPICS];
 
+extern bool publish_modes;
+extern bool publish_sensors;
+extern bool publish_alerts;
+extern bool publish_devices;
+extern bool publish_plc;
+
 void mqtt_init();
 
 void mqtt_callback(char* topic, byte *payload, unsigned int length);

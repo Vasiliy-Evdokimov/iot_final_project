@@ -42,6 +42,7 @@ void web_init()
   server.on("/setPlcMasks", handleSetPlcMasks);
   server.on("/delMqttPath", handleDelMqttPath);
   server.on("/addMqttPath", handleAddMqttPath);
+  server.on("/setPublishFlags", handleSetPublishFlags);
   //
   server.begin();
   //
@@ -240,6 +241,24 @@ void handleAddMqttPath()
   char buf[MQTT_MAX_VALUE_LENGTH];
   con_println("new_path = " + server.arg("new_path"));
   mqtt_subscribe_to_topic(server.arg("new_path").c_str());
+  //
+  server.send(200, "text/plane", 0);
+}
+
+void handleSetPublishFlags()
+{
+  con_println("handleSetPublishFlags()");
+  //  
+  publish_modes = (server.arg("publish_modes").toInt() > 0);
+  publish_sensors = (server.arg("publish_sensors").toInt() > 0);
+  publish_alerts = (server.arg("publish_alerts").toInt() > 0);
+  publish_devices = (server.arg("publish_devices").toInt() > 0);
+  publish_plc = (server.arg("publish_plc").toInt() > 0);
+  //
+  if (publish_modes) publishMode();
+  if (publish_sensors || publish_alerts) publishSensors();  
+  if (publish_devices) publishDevices();
+  if (publish_plc) publishPLC();
   //
   server.send(200, "text/plane", 0);
 }

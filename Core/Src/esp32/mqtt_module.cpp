@@ -24,6 +24,7 @@ bool publish_modes = false;
 bool publish_sensors = false;
 bool publish_alerts = false;
 bool publish_devices = false;
+bool publish_plc = true;
 
  mqtt_subscribe_topic mqtt_subscribe_topics[MQTT_MAX_SUBSCRIBE_TOPICS];
  int mqtt_subscribe_topics_count = 0;
@@ -200,6 +201,7 @@ void publishDevices()
 void publishPLC()
 {
   if (!use_mqtt) return;
+  if (!publish_plc) return;
   //
   snprintf(mqtt_topic, 128, "%s/plc/inputs", MQTT_ROOT);
   snprintf(mqtt_value, 20, "%d", plc_inputs_states);
