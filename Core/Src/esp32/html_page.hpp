@@ -7,11 +7,11 @@ const char main_page[] PROGMEM = R"=(
 <head>
   <style>
     
-    html {
+    html, input, select, option, button {
       font-family: Tahoma;
       font-size: 13pt;
       font-weight: 100;
-    }    
+    }
 
     .outer { width: 100% }
 
@@ -23,8 +23,7 @@ const char main_page[] PROGMEM = R"=(
 
     .input_value {
       width: 50px;
-      position: relative;
-      top: -2px;
+      position: relative;      
     }
 
     .check_mode {
@@ -43,16 +42,16 @@ const char main_page[] PROGMEM = R"=(
       vertical-align: middle;
     }
 
-    button {
+    .btn_set {
       width: 150px;
       position: relative;
-      top: -1px;
+      top: 0px;
     }
     
     .alert_compare {
       width: 40px;
       text-align: center;
-      height: 22px;
+      height: 27px;
     }
 
     input {
@@ -82,17 +81,12 @@ const char main_page[] PROGMEM = R"=(
     }
 
     .data_table {
-      width: 500px;
-      background-color: #e9f3f3;
-    }
-
-    .data_table td {
+      width: 500px;      
       border: 1px solid #c0c0c0;
-    }
+    }    
 
     select {
-      position: relative;
-      top: -2px;
+      position: relative;            
       margin-left: 6px;
       margin-right: 6px;
     }
@@ -120,6 +114,12 @@ const char main_page[] PROGMEM = R"=(
     .column_header,
     .table_footer {
       background: #d8e6f3;
+    }
+
+    .table_header,
+    .column_header td,
+    .table_footer td {
+      border: 1px solid #c0c0c0;
     }
 
     /*  ==========  */    
@@ -162,7 +162,7 @@ const char main_page[] PROGMEM = R"=(
 
     .plc_led {
       position: absolute;
-      top: -9px;
+      top: -10px;
       left: 0px;
       width: 20px;
       height: 20px;
@@ -171,7 +171,7 @@ const char main_page[] PROGMEM = R"=(
 
     .plc_led_bg {
       position: absolute;
-      top: -10px;
+      top: -11px;
       left: 0px;
       width: 22px;
       height: 22px;
@@ -202,6 +202,57 @@ const char main_page[] PROGMEM = R"=(
 
     .plc_inputs_table_title {
       width: 200px;
+    }
+
+    .outer_table_td {
+      padding: 0px;
+      margin: 0px;      
+      vertical-align: top;
+    }
+
+    .data_td {
+      padding: 5px;
+    }
+
+    #mqtt_td {
+      padding: 0px;
+    }
+
+    .mqtt_td_table {
+      width: 100%;
+    }
+
+    .mqtt_td_table  td:nth-child(1) {
+      text-align: left;      
+    }
+
+    .mqtt_path_td {
+      width: 68%;
+    }
+
+    .mqtt_value_td {
+      width: 17%;      
+    }
+
+    #new_mqtt_path {      
+      width: 98%;
+    }
+
+    .data_row:nth-child(odd) {
+      background-color: #e9f3f3;
+    }
+
+    .data_row:nth-child(even) {
+      background-color: #e6dfdf;
+    }
+
+    #check_button {
+      position: relative;
+      top: 0px;
+    }
+
+    .mqtt_btn {
+      width: 50px;    
     }
 
   </style>
@@ -240,7 +291,7 @@ const char main_page[] PROGMEM = R"=(
       //
       sensors.forEach(function(sensor_name, sensor_id, arr) {
         html +=
-            '<tr>' +
+            '<tr class="data_row">' +
               '<td>' + sensor_name[0].toUpperCase() + sensor_name.slice(1) + '</td>' +
               '<td id="' + sensor_name + '_current_value" class="current_value">?</td>' +
               '<td id="' + sensor_name + '_current_alert" class="current_value">?</td>' +
@@ -261,7 +312,7 @@ const char main_page[] PROGMEM = R"=(
       html += 
             '<tr class="table_footer">' +
               '<td colspan="4">' +
-                '<button onclick="setAlerts()">SET ALERTS</button>' +
+                '<button class="btn_set" onclick="setAlerts()">SET ALERTS</button>' +
               '</td>' +
             '</tr>' +
           '</table>';
@@ -287,7 +338,7 @@ const char main_page[] PROGMEM = R"=(
 
       devices.forEach(function(device_name, device_id, arr) {
         html +=
-          '<tr>' +
+          '<tr class="data_row">' +
             '<td>' + device_name[0].toUpperCase() + device_name.slice(1) + '</td>' +
             '<td id="' + device_name + '_current_state" class="current_value">?</td>' +
             '<td>' +
@@ -299,7 +350,7 @@ const char main_page[] PROGMEM = R"=(
       html += 
             '<tr class="table_footer">' +
               '<td colspan="3">' +
-                '<button onclick="setDevices()">SET STATES</button>' +
+                '<button class="btn_set" onclick="setDevices()">SET STATES</button>' +
               '</td>' +
             '</tr>' +
           '</table>';
@@ -328,7 +379,7 @@ const char main_page[] PROGMEM = R"=(
       //
       for (let i = 0; i < PLC_OUTPUTS_COUNT; i++) {
         html +=
-          '<tr class="plc_mask_row">' +
+          '<tr class="data_row plc_mask_row">' +
               '<td>' + 
                 '<table class="plc_outputs_table">' + 
                   '<tr>' + 
@@ -367,7 +418,7 @@ const char main_page[] PROGMEM = R"=(
       }  
       //
       html +=
-        '<tr>' +
+        '<tr class="data_row">' +
           '<td colspan="5" class="plc_inputs_table_td">' +
             '<table>' +
               '<tr>' +
@@ -398,7 +449,7 @@ const char main_page[] PROGMEM = R"=(
       html +=
         '<tr class="table_footer">' +
           '<td colspan="5">' +
-            '<button onclick="setPlcMasks()">SET MASKS</button>' +
+            '<button class="btn_set" onclick="setPlcMasks()">SET MASKS</button>' +
           '</td>' +
         '</tr>' +
       '</table>';
@@ -484,36 +535,18 @@ const char main_page[] PROGMEM = R"=(
         var mqtt_td = document.getElementById("mqtt_td");
         var mst = status.mqtt_subscribe_topics;
         //
-        html =
-          '<table class="data_table">' +
-          '<tr>' +
-            '<td colspan="3" class="table_header">MQTT SUBSCRIPTIONS</td>' +
-          '</tr>' +
-          '<tr class="column_header">' +
-            '<td>Path</td>' +
-            '<td>Value</td>' +
-            '<td></td>' + 
-          '</tr>';
-        //        
+        html = '<table class="mqtt_td_table">';
         for(let i = 0; i < mst.length; i++)
           if (mst[i].path != "")
             html +=
-              '<tr id="mqtt_path_' + i + '">' +
-                '<td>' + mst[i].path + '</td>' +
-                '<td>' + mst[i].value + '</td>' +
-                '<td>' + 
-                  '<button onclick="delMqttPath(' + i + ')">DEL</button>' +
+              '<tr class="data_row" id="mqtt_path_' + i + '">' +
+                '<td class="mqtt_path_td">' + mst[i].path + '</td>' +
+                '<td class="mqtt_value_td current_value">' + mst[i].value + '</td>' +
+                '<td>' +
+                  '<button class="mqtt_btn" onclick="delMqttPath(' + i + ')">DEL</button>' +
                 '</td>' +
               '</tr>';
-        //
-        html += 
-          '<tr class="table_footer">' +
-            '<td colspan="3">' +
-              '<input type="text" id="new_mqtt_path">' + 
-              '<button onclick="addMqttPath()">ADD</button>' +
-            '</td>' +
-          '</tr>' +        
-        '</table>';
+        html += "<table>";
         //
         mqtt_td.innerHTML = html;
       }
@@ -634,11 +667,13 @@ const char main_page[] PROGMEM = R"=(
     }  
 
     function addMqttPath() {      
-      new_path = document.getElementById('new_mqtt_path').value;
+      var path_input = document.getElementById('new_mqtt_path'); 
+      var new_path = path_input.value;
       var q = "addMqttPath?new_path=" + new_path;
       var xhttp = new XMLHttpRequest();
       xhttp.open("GET", q, true);
-      xhttp.send();      
+      xhttp.send();     
+      path_input.value = ""; 
     }
     
     function btnClick() {
@@ -652,39 +687,79 @@ const char main_page[] PROGMEM = R"=(
   <div class="outer">
     <div class="inner">
       <table class="outer_table">
-        <tr><td>
-          <table class="data_table mode_table">
-            <tr>
-              <td colspan="2" class="table_header">CHECK MODE</td>
-            </tr>
-            <tr>
-              <td colspan="2">current:&nbsp;<span id="current_mode">?</span></td>
-            </tr>
-            <tr>
-              <td><input name="check_mode" class="check_mode" type="radio" value=1 checked>with a frequency of
-              <td><input id="check_period" type="number" class="input_value" min="1" max="999" size="40" value="5"> seconds
-            </tr>  
-            <tr>
-              <td><input name="check_mode" class="check_mode" type="radio" value=2>with a change of
-              <td><input id="check_percents" type="number" class="input_value" min="1" max="999" size="40" value="5"> percents
-            </tr>
-            <tr>
-              <td><input name="check_mode" class="check_mode" type="radio" value=3>on command</td>
-              <td><button id="check_button" onclick="getStatus()">CHECK SENSORS</button></td>
-            </tr>        
-            <tr class="table_footer">
-              <td colspan="2">
-                <button onclick="setMode()">SET MODE</button>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-        <tr><td id="sensors_td"></td></tr>
-        <tr><td id="devices_td"></td></tr>
-        <tr><td id="plc_td"></td></tr>
-        <tr><td id="mqtt_td"></td></tr>
-      </table>
+        <tr>
+          <td class="outer_table_td">
+
+            <table>
+              <tr>
+                <td class="data_td">
+                  <table class="data_table mode_table">
+                    <tr>
+                      <td colspan="2" class="table_header">CHECK MODE</td>
+                    </tr>
+                    <tr class="data_row">
+                      <td colspan="2">current:&nbsp;<span id="current_mode">?</span></td>
+                    </tr>
+                    <tr class="data_row">
+                      <td><input name="check_mode" class="check_mode" type="radio" value=1 checked>with a frequency of
+                      <td><input id="check_period" type="number" class="input_value" min="1" max="999" size="40" value="5"> seconds
+                    </tr>  
+                    <tr class="data_row">
+                      <td><input name="check_mode" class="check_mode" type="radio" value=2>with a change of
+                      <td><input id="check_percents" type="number" class="input_value" min="1" max="999" size="40" value="5"> percents
+                    </tr>
+                    <tr class="data_row">
+                      <td><input name="check_mode" class="check_mode" type="radio" value=3>on command</td>
+                      <td><button id="check_button" onclick="getStatus()">CHECK SENSORS</button></td>
+                    </tr>        
+                    <tr class="table_footer">
+                      <td colspan="2">
+                        <button class="btn_set" onclick="setMode()">SET MODE</button>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr><td class="data_td" id="sensors_td"></td></tr>
+              <tr><td class="data_td" id="devices_td"></td></tr>
+            </table>
       
+          </td>
+          <td class="outer_table_td">
+
+            <table>
+              <tr><td class="data_td" id="plc_td"></td></tr>
+              <tr><td class="data_td">
+
+                <table class="data_table">
+                  <tr>
+                    <td colspan="3" class="table_header">MQTT SUBSCRIPTIONS</td>
+                  </tr>
+                  <tr class="column_header">
+                    <td class="mqtt_path_td">Path</td>
+                    <td class="mqtt_value_td">Value</td>
+                    <td>&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" id="mqtt_td"></td>
+                  </tr>
+                  <tr class="table_footer">
+                    <td colspan="2">
+                      <input type="text" id="new_mqtt_path">
+                    </td>
+                    <td>
+                      <button class="mqtt_btn" onclick="addMqttPath()">ADD</button>
+                    </td>
+                  </tr>
+                </table>
+
+              </td></tr>
+
+            </table>
+
+          </td>
+        </tr>
+      </table>      
     </div>
   </div>
 </div>

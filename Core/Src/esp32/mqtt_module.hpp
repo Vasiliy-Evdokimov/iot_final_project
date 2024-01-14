@@ -35,7 +35,7 @@ void mqtt_handle();
 
 bool mqtt_is_connected();
 
-void mqtt_subscribe_to_topic(char* new_path);
+void mqtt_subscribe_to_topic(const char* new_path);
 
 void mqtt_unsubscribe_from_topic(int index);
 

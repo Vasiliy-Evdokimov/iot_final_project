@@ -238,8 +238,8 @@ void handleAddMqttPath()
   con_println("handleAddMqttPath()");
   //
   char buf[MQTT_MAX_VALUE_LENGTH];
-  server.arg("new_path").toCharArray(buf, MQTT_MAX_VALUE_LENGTH);
-  printf("%s", buf);
+  con_println("new_path = " + server.arg("new_path"));
+  mqtt_subscribe_to_topic(server.arg("new_path").c_str());
   //
   server.send(200, "text/plane", 0);
 }

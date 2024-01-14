@@ -18,9 +18,10 @@ PubSubClient mqtt_client_sub;
 char mqtt_topic[128];
 char mqtt_value[20];
 
-bool use_mqtt = false;
+bool use_mqtt = true;
 //
 bool publish_modes = false;
+bool publish_sensors = false;
 bool publish_alerts = false;
 bool publish_devices = false;
 
@@ -86,7 +87,7 @@ void mqtt_init()
   }
 }
 
-void mqtt_subscribe_to_topic(char* new_path)
+void mqtt_subscribe_to_topic(const char* new_path)
 {
   int index = mqtt_subscribe_topics_count;
   memset(mqtt_subscribe_topics[index].path, 0, MQTT_MAX_VALUE_LENGTH);
@@ -108,7 +109,7 @@ void mqtt_callback(char* topic, byte *payload, unsigned int length)
 {
   if (!use_mqtt) return;
   //
-  con_println("-------new message from broker-----");
+  con_println("------- new message from broker -----");
   con_print("channel:");
   con_println(topic);
   con_print("data:");
@@ -147,6 +148,7 @@ void publishMode()
 void publishSensors() 
 {
   if (!use_mqtt) return;
+  if (!publish_sensors) return;
   //
   sensor* psensor;
   //
