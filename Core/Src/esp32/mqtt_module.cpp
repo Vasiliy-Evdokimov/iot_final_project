@@ -73,8 +73,6 @@ void mqtt_init()
     con_print("MQTT_sub connecting... ");
     if (mqtt_client_sub.connect(clientId.c_str())) {
       con_println("MQTT_sub connected!");
-      //
-      mqtt_subscribe_to_topic("gb_iot/1863_evi/plc/inputs");
     } else {
       con_print("Failed, status code = ");
       con_println(String(mqtt_client_sub.state()));
@@ -88,22 +86,61 @@ void mqtt_init()
   }
 }
 
+void mqtt_clear_topic(int index)
+{
+  int sz = MQTT_MAX_VALUE_LENGTH;
+  memset(mqtt_subscribe_topics[index].path, 0, sz);
+  memset(mqtt_subscribe_topics[index].value, 0, sz);
+}
+
+void mqtt_print_topics()
+{
+  con_println("========== TOPICS LIST ==========");
+  for (int i = 0; i < MQTT_MAX_SUBSCRIBE_TOPICS; i++)
+    con_println(
+      (String)i + " = " +
+      mqtt_subscribe_topics[i].path + " = " +
+      mqtt_subscribe_topics[i].value
+    );
+  con_println("=================================");
+}
+
+void mqtt_rearrange_topics()
+{
+  con_println("mqtt_rearrange_topics()");
+  //
+  for (int i = 0; i < MQTT_MAX_SUBSCRIBE_TOPICS; i++)
+    if (strcmp(mqtt_subscribe_topics[i].path, ""))
+      for (int j = 0; j < i; j++)
+        if (!strcmp(mqtt_subscribe_topics[j].path, ""))
+        {
+          strcpy(mqtt_subscribe_topics[j].path, mqtt_subscribe_topics[i].path);
+          strcpy(mqtt_subscribe_topics[j].value, mqtt_subscribe_topics[i].value);
+          mqtt_clear_topic(i);
+          break;
+        }
+}
+
 void mqtt_subscribe_to_topic(const char* new_path)
 {
   int index = mqtt_subscribe_topics_count;
-  memset(mqtt_subscribe_topics[index].path, 0, MQTT_MAX_VALUE_LENGTH);
-  memset(mqtt_subscribe_topics[index].value, 0, MQTT_MAX_VALUE_LENGTH);
+  mqtt_clear_topic(index);
   strcpy(mqtt_subscribe_topics[index].path, new_path);
   mqtt_client_sub.subscribe(mqtt_subscribe_topics[index].path);
   mqtt_subscribe_topics_count++;
+  //
+  mqtt_print_topics();
 }
 
 void mqtt_unsubscribe_from_topic(int index) 
 {
   mqtt_client_sub.unsubscribe(mqtt_subscribe_topics[index].path);
-  memset(mqtt_subscribe_topics[index].path, 0, MQTT_MAX_VALUE_LENGTH);
-  memset(mqtt_subscribe_topics[index].value, 0, MQTT_MAX_VALUE_LENGTH);
+  mqtt_clear_topic(index);  
   mqtt_subscribe_topics_count--;
+  //
+  mqtt_print_topics();
+  mqtt_rearrange_topics();
+  mqtt_print_topics();
 }
 
 void mqtt_callback(char* topic, byte *payload, unsigned int length) 
