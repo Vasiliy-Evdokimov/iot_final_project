@@ -15,6 +15,9 @@ TaskHandle_t xMainLoopTask;
 TaskHandle_t xUartTransmitterTask;
 QueueHandle_t xUartTransmitterQueue;
 
+TaskHandle_t xUartReceiverTask;
+QueueHandle_t xUartReceiverQueue;
+
 extern UART_HandleTypeDef huart1;
 
 void vGetSensorsDataTask(void * pvParameters)
@@ -45,17 +48,39 @@ void vUartTransmitterTask(void * pvParameters)
 		while (xQueueReceive(xUartTransmitterQueue, &uartBuffer, portMAX_DELAY))
 		{
 			printUartBuffer("TX", uartBuffer.bytes);
-			HAL_UART_Transmit_IT(&huart1, uartBuffer.bytes, BUFFER_SIZE);
-			osDelay(100);
+			HAL_UART_Transmit(&huart1, uartBuffer.bytes, BUFFER_SIZE, 10000);
+			HAL_UART_AbortTransmit(&huart1);
+			osDelay(10);
 		}
 		//
-		osDelay(10);
+		osDelay(100);
 	}
 }
 
 void vAddUartTransmitterTask(UartBuffer aUartBuffer)
 {
 	xQueueSend(xUartTransmitterQueue, &aUartBuffer, portMAX_DELAY);
+}
+
+void vUartReceiverTask(void * pvParameters)
+{
+	UartBuffer uartBuffer;
+	for(;;)
+	{
+		while (xQueueReceive(xUartReceiverQueue, &uartBuffer, portMAX_DELAY))
+		{
+			printUartBuffer("RX", uartBuffer.bytes);
+			handleUART(uartBuffer);
+			osDelay(10);
+		}
+		//
+		osDelay(100);
+	}
+}
+
+void vAddUartReceiverTask(UartBuffer aUartBuffer)
+{
+	xQueueSend(xUartReceiverQueue, &aUartBuffer, portMAX_DELAY);
 }
 
 void tasks_init()
@@ -84,6 +109,30 @@ void tasks_init()
 		printf("xUartTransmitterTask was successfully created!\n");
 	}
 	//
+	//
+	xUartReceiverQueue = xQueueCreate( 32, sizeof(UartBuffer) );
+	if( xUartReceiverQueue == NULL )
+	{
+		printf("xUartReceiverQueue creation failed!\n");
+	} else {
+		printf("xUartReceiverQueue was successfully created!\n");
+	}
+	//
+	if ( xTaskCreate(
+			vUartReceiverTask,
+			buf,
+			128,
+			NULL,
+			osPriorityNormal,
+			&xUartReceiverTask
+		) != pdPASS )
+	{
+		printf("xUartReceiverTask creation failed!\n");
+	} else {
+		printf("xUartReceiverTask was successfully created!\n");
+	}
+	//
+	//
 	if ( xTaskCreate(
 			vGetSensorsDataTask,
 			buf,
@@ -97,6 +146,7 @@ void tasks_init()
 	} else {
 		printf("xGetSensorsDataTask was successfully created!\n");
 	}
+	//
 	//
 	if ( xTaskCreate(
 			vMainLoopTask,

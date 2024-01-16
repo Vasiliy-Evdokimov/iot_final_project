@@ -24,7 +24,6 @@ typedef struct {
 
 DHT_sensor dht11 = { GPIOB, GPIO_PIN_6, DHT11, GPIO_NOPULL };
 
-uint8_t fl_btn = 0;
 uint8_t fl_uart = 0;
 uint8_t fl_send_data = 0;
 
@@ -82,7 +81,10 @@ void getSensorsData()
 void doUartReceive()
 {
 	HAL_UART_Receive_IT(&huart1, rx, BUFFER_SIZE);
-	printUartBuffer("RX", rx);
+	//
+	UartBuffer uartBuffer;
+	memcpy(uartBuffer.bytes, rx, BUFFER_SIZE);
+	vAddUartReceiverTask(uartBuffer);
 }
 
 void doUartTransmit(uint8_t* aTX)
@@ -170,13 +172,6 @@ void fillTxPlcMasksData(uint8_t* aTX)
 	fillTxCRC(aTX);
 }
 
-void handleButton()
-{
-	uint8_t aTX[BUFFER_SIZE];
-	fillTxSensorData(aTX);
-	doUartTransmit(aTX);
-}
-
 void sendCompleteStatus()
 {
 	uint8_t aTX[BUFFER_SIZE];
@@ -194,21 +189,25 @@ void sendCompleteStatus()
 	doUartTransmit(aTX);
 }
 
-void handleUART()
+void handleUART(UartBuffer uartBuffer)
 {
-	doUartReceive();
+	uint8_t aRX[BUFFER_SIZE];
+	memcpy(aRX, uartBuffer.bytes, BUFFER_SIZE);
 
 	uint8_t aTX[BUFFER_SIZE];
 
-	uint8_t rx0 = rx[0];
-	uint8_t rx1 = rx[1];
+	if (!aRX[0] && aRX[1])
+		memcpy(&aRX[0], &aRX[1], BUFFER_SIZE - 1);
+
+	uint8_t rx0 = aRX[0];
+	uint8_t rx1 = aRX[1];
 
 	uint8_t idx;
 	uint8_t fl_transmit = 0;
 
-	uint8_t crc = getCRC(rx1, rx);
+	uint8_t crc = getCRC(rx1, aRX);
 
-	if (crc != rx[rx1]) {
+	if (crc != aRX[rx1]) {
 
 		/* Handle CRC error */
 		__NOP();
@@ -225,11 +224,11 @@ void handleUART()
 	} else
 	//
 	if (rx0 == CMD_SET_MODE) {
-		current_mode.type = rx[2];
+		current_mode.type = aRX[2];
 		if (current_mode.type == MODE_PERIODIC)
-			current_mode.period = rx[3];
+			current_mode.period = aRX[3];
 		if (current_mode.type == MODE_IFCHANGED)
-			current_mode.percents = rx[3];
+			current_mode.percents = aRX[3];
 		//
 		fillTxModeData(aTX);
 		fl_transmit = 1;
@@ -241,13 +240,13 @@ void handleUART()
 	}
 	//
 	if (rx0 == CMD_SET_ALERTS) {
-		for (int i = 0; i < rx[1] / 4; i++) {
+		for (int i = 0; i < aRX[1] / 4; i++) {
 			idx = 2 + i * 4;
-			psensor = getSensorByType(rx[idx]);
+			psensor = getSensorByType(aRX[idx]);
 			if (!psensor) continue;
-			psensor->alert_check = rx[idx + 1];
-			psensor->alert_compare = rx[idx + 2];
-			psensor->alert_value = rx[idx + 3];
+			psensor->alert_check = aRX[idx + 1];
+			psensor->alert_compare = aRX[idx + 2];
+			psensor->alert_value = aRX[idx + 3];
 		}
 		//
 		fillTxSensorData(aTX);
@@ -255,11 +254,11 @@ void handleUART()
 	} else
 	//
     if (rx0 == CMD_SET_DEVICES) {
-    	for (int i = 0; i < rx[1] / 2; i++)
+    	for (int i = 0; i < aRX[1] / 2; i++)
     		for (int j = 0; j < DEVICES_COUNT; j++) {
     			idx = 2 + i * 2;
-    			if (devices[j].type == rx[idx]) {
-    				devices_states[j].value = rx[idx + 1];
+    			if (devices[j].type == aRX[idx]) {
+    				devices_states[j].value = aRX[idx + 1];
     				HAL_GPIO_WritePin(
     					devices[j].port,
 						devices[j].pin,
@@ -286,8 +285,8 @@ void handleUART()
 		for (int j = 0; j < PLC_OUTPUTS_COUNT; j++) {
 			idx = 2 + j * 2;
 			if (!rx[idx]) continue;
-			plc_outputs_masks[j].mask = rx[idx];
-			plc_outputs_masks[j].all_bits = rx[idx + 1];
+			plc_outputs_masks[j].mask = aRX[idx];
+			plc_outputs_masks[j].all_bits = aRX[idx + 1];
 		}
 		//
 		vApplyPlcMasks(plc_inputs_states);
@@ -323,16 +322,9 @@ void mainLoop()
 {
 	fl_send_data = 0;
 
-	if (fl_btn)
-	{
-		handleButton();
-		//
-		fl_btn = 0;
-	}
-
 	if (fl_uart)
 	{
-		handleUART();
+		doUartReceive();
 		//
 		fl_uart = 0;
 	}
@@ -362,22 +354,11 @@ void mainLoop()
 	}
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	fl_btn = 1;
-}
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart == &huart1) {
+	if (huart == &huart1)
+	{
 		fl_uart = 1;
-	}
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if (huart == &huart1) {
-		__NOP();
 	}
 }
 

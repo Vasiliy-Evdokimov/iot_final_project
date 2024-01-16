@@ -9,10 +9,13 @@
 #define SRC_STM_FUNCTIONS_H_
 
 #include "main.h"
+#include "stm_utils.h"
 
 void init();
 
 void mainLoop();
+
+void handleUART(UartBuffer uartBuffer);
 
 void getSensorsData();
 

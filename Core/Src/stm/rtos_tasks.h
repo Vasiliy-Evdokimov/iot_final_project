@@ -13,6 +13,8 @@
 
 void vAddUartTransmitterTask(UartBuffer aUartBuffer);
 
+void vAddUartReceiverTask(UartBuffer aUartBuffer);
+
 void tasks_init();
 
 #endif /* SRC_STM_RTOS_TASKS_H_ */

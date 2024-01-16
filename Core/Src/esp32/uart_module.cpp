@@ -64,12 +64,12 @@ void uart_handle()
     rx0 = rx[0];
     rx1 = rx[1];
     //    
-    uint8_t crc = getCRC(rx1, rx);    
+    uint8_t crc = getCRC(rx1, rx);
     //
     if (crc != rx[rx1]) {
-      con_println("CRC failed!");
-      //rx0 = 0;
-      break;      
+      con_print("CRC failed!");
+      print_buffer(rx, "RX");
+      break;
     }
     //
     rx_counter++;
