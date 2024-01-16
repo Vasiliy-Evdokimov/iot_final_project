@@ -50,7 +50,7 @@ void vUartTransmitterTask(void * pvParameters)
 			printUartBuffer("TX", uartBuffer.bytes);
 			HAL_UART_Transmit(&huart1, uartBuffer.bytes, BUFFER_SIZE, 10000);
 			HAL_UART_AbortTransmit(&huart1);
-			osDelay(10);
+			osDelay(100);
 		}
 		//
 		osDelay(100);
@@ -71,7 +71,7 @@ void vUartReceiverTask(void * pvParameters)
 		{
 			printUartBuffer("RX", uartBuffer.bytes);
 			handleUART(uartBuffer);
-			osDelay(10);
+			osDelay(100);
 		}
 		//
 		osDelay(100);
