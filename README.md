@@ -1,4 +1,4 @@
-# iot_final_project
+# iot_project
 Device functionality:
 - collecting information about temperature and humidity from the DHT11 sensor, ambient data from the APDS9930 sensor;
 - collection of data on the state of user inputs;
